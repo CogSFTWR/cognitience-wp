@@ -24,8 +24,8 @@ jobs:
         run: |
           mkdir -p release-artifacts
           shopt -s nullglob
-          for f in release/*.dmg release/*.zip release/*arm64*; do
-            [ -e "$f" ] && cp "$f" release-artifacts/
+          for f in release/*.dmg release/*.zip; do
+            [ -f "$f" ] && cp "$f" release-artifacts/
           done
           if [ ! "$(ls -A release-artifacts)" ]; then
             echo "No mac artifacts found in release/"
