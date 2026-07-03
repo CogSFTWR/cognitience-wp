@@ -90,7 +90,11 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "resources/icon.png"
+      "icon": "resources/icon-mac.png",
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "win": {
       "target": [
