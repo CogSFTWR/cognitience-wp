@@ -9,8 +9,8 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 ## Download & Install
 
 Download from the [releases page](https://github.com/Maq-Swarm/cognitience-wp/releases):
-- `Cognitience WP Setup 1.2.0.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
-- `Cognitience-WP-Portable-1.2.0.exe` — Single portable EXE (no install needed, just run)
+- `Cognitience WP Setup 1.2.2.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
+- `Cognitience-WP-Portable-1.2.2.exe` — Single portable EXE (no install needed, just run)
 
 ## Features
 

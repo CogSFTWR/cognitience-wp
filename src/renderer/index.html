@@ -139,6 +139,12 @@
     </div>
     <div class="toolbar-divider"></div>
     <div class="toolbar-group">
+      <button class="tool-btn tool-btn-label" id="btn-spellcheck" type="button" title="Underline misspelled words in the document">
+        Spellcheck
+      </button>
+    </div>
+    <div class="toolbar-divider"></div>
+    <div class="toolbar-group">
       <button class="tool-btn" data-cmd="subscript" title="Subscript">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5l8 10M12 5L4 15"/><text x="14" y="20" font-size="8" fill="currentColor">x</text></svg>
       </button>
@@ -241,7 +247,7 @@
       <span class="status-item" id="status-format">Rich Text</span>
       <span class="status-item" id="status-theme">Cognitience Light</span>
       <span class="status-item" id="status-encoding">UTF-8</span>
-      <span class="status-item" id="status-spellcheck" style="cursor:pointer">Spell Check: ON</span>
+      <span class="status-item" id="status-spellcheck" style="cursor:pointer" title="Underline misspelled words">Spellcheck</span>
     </div>
   </div>
 
@@ -268,7 +274,9 @@
 
   <!-- ─── Scripts ────────────────────────────────────── -->
   <script src="templates.js"></script>
+  <script src="spellsolver.js"></script>
   <script src="spell-replace.js"></script>
+  <script src="spell-manual.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

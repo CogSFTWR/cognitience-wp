@@ -7,7 +7,6 @@ import { ipcMain, dialog, clipboard, shell, BrowserWindow, app } from 'electron'
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
-import { marked } from 'marked';
 import mammoth from 'mammoth';
 import { WindowManager } from './window-manager';
 import { ExtensionHost } from './extension-host';
@@ -92,7 +91,7 @@ export class IPCMainRegistry {
       } else if (ext === '.md' || ext === '.markdown') {
         const content = fs.readFileSync(filePath, 'utf-8');
         try {
-          parsedContent = marked.parse(content) as string;
+          parsedContent = await this.parseMarkdown(content);
         } catch {
           // Fallback: basic markdown to HTML
           parsedContent = content
@@ -523,5 +522,10 @@ module.exports = { activate, deactivate };
 
   private registerSpellcheckHandlers() {
     registerSpellIpcHandlers(this.windowManager);
+  }
+
+  private async parseMarkdown(content: string): Promise<string> {
+    const { marked } = await import('marked');
+    return marked.parse(content) as string;
   }
 }

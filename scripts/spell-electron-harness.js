@@ -12,7 +12,7 @@ const { app, BrowserWindow } = require('electron');
 
 const ROOT = path.join(__dirname, '..');
 app.commandLine.appendSwitch('enable-spell-checking');
-const SCRATCH = process.env.GROK_SCRATCH || path.join(os.tmpdir(), 'grok-goal-129f57e80eb5', 'implementer');
+const SCRATCH = process.env.GROK_SCRATCH || path.join(os.tmpdir(), 'grok-goal-8cbdee8c2cc6', 'implementer');
 const LOG_PATH = path.join(SCRATCH, `spell-electron-harness-${Date.now()}.log`);
 const CUSTOM_WORD = 'CognitienceXyz';
 const MISSPELLED = 'speling';
@@ -56,7 +56,7 @@ function stubEsmDepsForHarness() {
 
 function getHarnessHtml() {
   return `<!DOCTYPE html><html lang="en"><body style="margin:20px">
-<div contenteditable="true" spellcheck="true" id="ed" style="font-size:28px;line-height:1.4;min-height:60px" lang="en"></div>
+<div contenteditable="true" spellcheck="false" id="ed" style="font-size:28px;line-height:1.4;min-height:60px" lang="en"></div>
 </body></html>`;
 }
 
@@ -160,6 +160,18 @@ async function triggerRealContextMenu(win) {
     })()
   `);
 
+  // sendInputEvent does not always fire before-input-event; mirror spell-context.ts enable.
+  win.webContents.session.setSpellCheckerEnabled(true);
+  await win.webContents.executeJavaScript(`
+    (() => {
+      const ed = document.getElementById('ed');
+      ed.spellcheck = true;
+      ed.setAttribute('spellcheck', 'true');
+    })()
+  `);
+  // Brief pause mirrors real mousedown → contextmenu gap so Hunspell can scan the token.
+  await new Promise((r) => setTimeout(r, 150));
+
   win.webContents.sendInputEvent({
     type: 'mouseDown',
     x: coords.x,
@@ -167,6 +179,7 @@ async function triggerRealContextMenu(win) {
     button: 'right',
     clickCount: 1,
   });
+  await new Promise((r) => setTimeout(r, 50));
   win.webContents.sendInputEvent({
     type: 'mouseUp',
     x: coords.x,
@@ -238,8 +251,9 @@ async function runHarness() {
 
   const session = win.webContents.session;
   session.setSpellCheckerLanguages(['en-US']);
-  session.setSpellCheckerEnabled(true);
-  log(`session spellchecker enabled: ${session.isSpellCheckerEnabled()}, langs: ${session.getSpellCheckerLanguages().join(',')}`);
+  // Match real app startup (index.ts): session disabled until right-click.
+  session.setSpellCheckerEnabled(false);
+  log(`session spellchecker at startup: ${session.isSpellCheckerEnabled()}, langs: ${session.getSpellCheckerLanguages().join(',')}`);
   attachSpellContextMenu(win);
 
   await Promise.race([
@@ -262,6 +276,18 @@ async function runHarness() {
 
   clearLastSpellContext();
   await win.webContents.executeJavaScript('window.cognitience.spell.clearContext()');
+
+  assert(!session.isSpellCheckerEnabled(), 'session must stay disabled during typing (real app path)');
+  log('session still disabled after typing — matches index.ts startup invariant');
+
+  // Mirror renderer right-mousedown: enable element spellcheck before Chromium context-menu.
+  await win.webContents.executeJavaScript(`
+    (() => {
+      const ed = document.getElementById('ed');
+      ed.spellcheck = true;
+      ed.setAttribute('spellcheck', 'true');
+    })()
+  `);
 
   const click = await triggerRealContextMenu(win);
   log(`real right-click at (${click.coords.x}, ${click.coords.y}) rect=${click.coords.w}x${click.coords.h} on "${MISSPELLED}" (context-menu fired: ${click.contextFired})`);

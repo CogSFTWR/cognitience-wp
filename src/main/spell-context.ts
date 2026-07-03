@@ -51,5 +51,6 @@ export function attachSpellContextMenu(window: BrowserWindow): void {
 
   window.webContents.on('context-menu', (_event, params) => {
     handleSpellContextParams(window, params);
+    window.webContents.session.setSpellCheckerEnabled(false);
   });
 }

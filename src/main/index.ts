@@ -12,8 +12,7 @@ import { ExtensionHost } from './extension-host';
 import { ConfigStore } from './config-store';
 import { MenuBuilder } from './menu-builder';
 import { PluginHost } from './plugin-host';
-import { preloadCustomDictionary } from './spell-dictionary';
-import { attachSpellContextMenu } from './spell-context';
+
 
 let mainWindow: BrowserWindow | null = null;
 let windowManager: WindowManager;
@@ -45,13 +44,9 @@ app.whenReady().then(async () => {
 
   mainWindow = windowManager.createMainWindow();
 
-  // Pre-load custom dictionary words into Hunspell session
+  // Native session spellcheck disabled — renderer uses manual SymSpell underlines.
   if (mainWindow) {
-    mainWindow.webContents.session.setSpellCheckerLanguages(['en-US']);
-    // Start disabled; renderer re-enables at word boundaries. Right-click enabled in spell-context.
     mainWindow.webContents.session.setSpellCheckerEnabled(false);
-    attachSpellContextMenu(mainWindow);
-    preloadCustomDictionary(mainWindow, configStore);
   }
 
   // Build and set menu

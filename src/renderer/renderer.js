@@ -28,10 +28,6 @@ const CognitienceWP = {
   findState: { query: '', index: -1, matches: 0 },
   // Spellcheck
   spellChecker: null,
-  spellCheckEnabled: true,
-  spellCheckTimer: null,
-  spellCheckDelay: 500, // ms after typing stops
-  spellTypingTimer: null,
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -137,17 +133,10 @@ function applyConfigToEditor() {
     root.style.setProperty('--editor-padding', cfg['editor.padding'] + 'px');
   }
 
-  const spellcheck = cfg['editor.spellcheck'];
-  CognitienceWP.spellCheckEnabled = spellcheck !== false;
   if (CognitienceWP.editor) {
-    CognitienceWP.editor.setAttribute('data-spellcheck', String(CognitienceWP.spellCheckEnabled));
-    syncEditorSpellcheckState(CognitienceWP.editor);
+    CognitienceWP.editor.setAttribute('spellcheck', 'false');
+    CognitienceWP.editor.spellcheck = false;
   }
-  const spellStatus = document.getElementById('status-spellcheck');
-  if (spellStatus) {
-    spellStatus.textContent = 'Spell Check: ' + (CognitienceWP.spellCheckEnabled ? 'ON' : 'OFF');
-  }
-  // Native spellcheck toggles with contenteditable spellcheck attribute (set above)
 }
 
 function setupConfigListener() {
@@ -161,178 +150,57 @@ function setupConfigListener() {
 // EDITOR EVENTS
 // ═══════════════════════════════════════════════════════════
 
-function isWordBoundaryKey(key) {
-  return key === ' ' || key === 'Enter' || /^[.,;:!?)\]}]$/.test(key);
-}
-
-function isTypingKey(e) {
-  return (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey)
-    || e.key === 'Backspace' || e.key === 'Delete';
-}
-
-function getCaretCharacterOffset(root) {
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount) return null;
-  const range = sel.getRangeAt(0);
-  if (!root.contains(range.startContainer)) return null;
-  const pre = document.createRange();
-  pre.selectNodeContents(root);
-  pre.setEnd(range.startContainer, range.startOffset);
-  return pre.toString().length;
-}
-
-function setCaretCharacterOffset(root, offset) {
-  const sel = window.getSelection();
-  if (!sel) return false;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let count = 0;
-  let node;
-  while ((node = walker.nextNode())) {
-    const len = node.textContent.length;
-    if (count + len >= offset) {
-      const range = document.createRange();
-      range.setStart(node, offset - count);
-      range.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(range);
-      return true;
-    }
-    count += len;
-  }
-  return false;
-}
-
-let expectedCaretAfterEdit = null;
-
-async function suspendSpellcheckWhileTyping(editor) {
-  if (!editor || !CognitienceWP.spellCheckEnabled) return;
-  editor.spellcheck = false;
-  editor.setAttribute('spellcheck', 'false');
-  if (window.cognitience?.spell?.setSessionEnabled) {
-    await window.cognitience.spell.setSessionEnabled(false);
-  }
-}
-
-async function enableSpellcheckForInspection(editor) {
-  if (!editor || !CognitienceWP.spellCheckEnabled) return;
-  editor.spellcheck = true;
-  editor.setAttribute('spellcheck', 'true');
-  if (window.cognitience?.spell?.setSessionEnabled) {
-    await window.cognitience.spell.setSessionEnabled(true);
-  }
-}
-
-function syncEditorSpellcheckState(editor) {
-  if (!CognitienceWP.spellCheckEnabled) {
-    editor.spellcheck = false;
-    editor.setAttribute('spellcheck', 'false');
-    window.cognitience?.spell?.setSessionEnabled?.(false);
-    return;
-  }
-  const focused = document.activeElement === editor || editor.contains(document.activeElement);
-  if (focused) {
-    suspendSpellcheckWhileTyping(editor);
-  } else {
-    enableSpellcheckForInspection(editor);
-  }
-}
-
 function setupEditorEvents() {
   const editor = CognitienceWP.editor;
 
-  editor.addEventListener('focus', () => {
-    suspendSpellcheckWhileTyping(editor);
-  });
+  editor.spellcheck = false;
+  editor.setAttribute('spellcheck', 'false');
 
-  editor.addEventListener('blur', () => {
-    if (CognitienceWP.spellCheckEnabled) {
-      enableSpellcheckForInspection(editor);
-    }
-  });
-
-  // Chromium spellcheck (element + session) jumps the caret to the start of a misspelled
-  // word mid-token. Keep both off while typing; enable only at word boundaries or right-click.
   editor.addEventListener('keydown', (e) => {
-    if (!e.isComposing && CognitienceWP.spellCheckEnabled && isTypingKey(e)) {
-      suspendSpellcheckWhileTyping(editor);
-    }
     if (e.key === 'Tab') {
       e.preventDefault();
       document.execCommand('insertText', false, '    ');
     }
   }, true);
 
-  editor.addEventListener('beforeinput', (e) => {
-    if (e.isComposing || !CognitienceWP.spellCheckEnabled) return;
-    const offset = getCaretCharacterOffset(editor);
-    if (offset == null) return;
-
-    if (e.inputType === 'deleteContentBackward') {
-      expectedCaretAfterEdit = Math.max(0, offset - 1);
-    } else if (e.inputType.startsWith('insert')) {
-      expectedCaretAfterEdit = offset + (e.data ? e.data.length : 1);
-    } else {
-      expectedCaretAfterEdit = null;
-    }
-
-    suspendSpellcheckWhileTyping(editor);
-  });
-
   editor.addEventListener('input', () => {
-    const expected = expectedCaretAfterEdit;
-    if (expected != null) {
-      requestAnimationFrame(() => {
-        const actual = getCaretCharacterOffset(editor);
-        if (actual != null && actual < expected) {
-          setCaretCharacterOffset(editor, expected);
-        }
-      });
-      expectedCaretAfterEdit = null;
+    if (window.SpellManual) {
+      window.SpellManual.clearMisspelledMarks(editor);
     }
-
     markDirty();
     updateWordCount();
     updateOutline();
-    scheduleSpellCheck();
   });
 
-  editor.addEventListener('keyup', (e) => {
+  editor.addEventListener('keyup', () => {
     updateCursorPosition();
     updateToolbarState();
-    if (CognitienceWP.spellCheckEnabled && isWordBoundaryKey(e.key)) {
-      enableSpellcheckForInspection(editor);
-    }
   });
 
   editor.addEventListener('click', updateCursorPosition);
   editor.addEventListener('mouseup', updateToolbarState);
 
-  editor.addEventListener('mousedown', (e) => {
-    if (e.button === 2 && CognitienceWP.spellCheckEnabled) {
-      enableSpellcheckForInspection(editor);
-    }
-  }, true);
-
-  suspendSpellcheckWhileTyping(editor);
-
-  // Context menu on right-click (main sends spell:contextMenu before renderer handler runs)
-  editor.addEventListener('contextmenu', async (e) => {
+  editor.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    const missSpan = e.target.closest && e.target.closest('.cog-misspelled');
     const sel = window.getSelection();
     const savedRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
-    const spellCtx = await window.cognitience.spell.waitForContext(400);
-    if (spellCtx && spellCtx.misspelledWord) {
+    let spellCtx = null;
+    if (missSpan && CognitienceWP.spellChecker) {
+      const word = missSpan.dataset.word || missSpan.textContent;
+      const suggestions = CognitienceWP.spellChecker.suggest(String(word).toLowerCase(), 5).map((s) => s.word);
       lastSpellContextForFix = {
-        ...spellCtx,
-        x: spellCtx.x ?? e.clientX,
-        y: spellCtx.y ?? e.clientY,
+        misspelledWord: word,
+        suggestions,
+        x: e.clientX,
+        y: e.clientY,
         savedRange,
       };
+      spellCtx = { misspelledWord: word, suggestions };
     } else {
-      lastSpellContextForFix = spellCtx;
+      lastSpellContextForFix = null;
     }
     showContextMenu(e.clientX, e.clientY, spellCtx);
-    suspendSpellcheckWhileTyping(editor);
   });
 
   // Track scroll for auto-save
@@ -417,11 +285,15 @@ function updateCursorPosition() {
 // ═══════════════════════════════════════════════════════════
 
 function setupToolbar() {
-  const buttons = document.querySelectorAll('.tool-btn');
+  const spellBtn = document.getElementById('btn-spellcheck');
+  if (spellBtn) {
+    spellBtn.addEventListener('click', () => runDocumentSpellcheck());
+  }
+
+  const buttons = document.querySelectorAll('.tool-btn[data-cmd]');
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const cmd = btn.getAttribute('data-cmd');
-      executeFormatCommand(cmd);
+      executeFormatCommand(btn.getAttribute('data-cmd'));
     });
   });
 
@@ -885,11 +757,41 @@ function showSidebarView(view) {
   }
 }
 
+function escapeHtmlAttr(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
+const EXPLORER_ACTIONS = {
+  'focus-editor': () => CognitienceWP.editor.focus(),
+  'new-document': () => newDocument(),
+  'open-document': () => openDocument(),
+  'save-document': () => saveDocument(),
+  'save-as': () => saveAsDocument(),
+};
+
+function wireExplorerActions(container) {
+  container.querySelectorAll('[data-action]').forEach((item) => {
+    item.addEventListener('click', () => {
+      const action = item.dataset.action;
+      if (action === 'open-recent') {
+        const filePath = item.dataset.path;
+        if (filePath) openRecentFile(filePath);
+        return;
+      }
+      const handler = EXPLORER_ACTIONS[action];
+      if (handler) handler();
+    });
+  });
+}
+
 function renderExplorer(container) {
   container.innerHTML = `
     <div class="sidebar-section">
       <div class="sidebar-section-header">Open Document</div>
-      <div class="sidebar-item" onclick="CognitienceWP.editor.focus()">
+      <div class="sidebar-item" data-action="focus-editor">
         <span class="sidebar-icon">📄</span>
         <span class="sidebar-name">${CognitienceWP.docTitle}</span>
       </div>
@@ -898,7 +800,7 @@ function renderExplorer(container) {
       <div class="sidebar-section-header">Recent Files</div>
       ${CognitienceWP.recentFiles.length > 0
         ? CognitienceWP.recentFiles.map(f => `
-          <div class="sidebar-item" onclick="openRecentFile('${f.path.replace(/'/g, "\\'")}')">
+          <div class="sidebar-item" data-action="open-recent" data-path="${escapeHtmlAttr(f.path)}">
             <span class="sidebar-icon">📃</span>
             <span class="sidebar-name">${f.name}</span>
           </div>
@@ -908,24 +810,25 @@ function renderExplorer(container) {
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-header">Actions</div>
-      <div class="sidebar-item" onclick="newDocument()">
+      <div class="sidebar-item" data-action="new-document">
         <span class="sidebar-icon">✨</span>
         <span class="sidebar-name">New Document (Ctrl+N)</span>
       </div>
-      <div class="sidebar-item" onclick="openDocument()">
+      <div class="sidebar-item" data-action="open-document">
         <span class="sidebar-icon">📂</span>
         <span class="sidebar-name">Open File… (Ctrl+O)</span>
       </div>
-      <div class="sidebar-item" onclick="saveDocument()">
+      <div class="sidebar-item" data-action="save-document">
         <span class="sidebar-icon">💾</span>
         <span class="sidebar-name">Save (Ctrl+S)</span>
       </div>
-      <div class="sidebar-item" onclick="saveAsDocument()">
+      <div class="sidebar-item" data-action="save-as">
         <span class="sidebar-icon">📥</span>
         <span class="sidebar-name">Save As… (Ctrl+Shift+S)</span>
       </div>
     </div>
   `;
+  wireExplorerActions(container);
 }
 
 function renderSearch(container) {
@@ -1018,11 +921,9 @@ function renderSettings(container) {
             <input type="checkbox" id="set-word-wrap" ${cfg['editor.wordWrap'] ? 'checked' : ''} />
           </div>
         </div>
-        <div class="setting-row">
-          <span class="setting-label">Spell Check</span>
-          <div class="setting-control">
-            <input type="checkbox" id="set-spellcheck" ${cfg['editor.spellcheck'] ? 'checked' : ''} />
-          </div>
+        <div class="setting-row" style="display:block;">
+          <span class="setting-label">Spellcheck</span>
+          <div style="font-size:12px;color:var(--fg-tab);margin-top:4px;">Click the <strong>Spellcheck</strong> button in the toolbar (or status bar) to underline misspelled words. Spellcheck does not run while you type.</div>
         </div>
         <div class="setting-row">
           <span class="setting-label">Auto Save</span>
@@ -1114,9 +1015,6 @@ function renderSettings(container) {
   });
   document.getElementById('set-word-wrap').addEventListener('change', (e) => {
     window.cognitience.config.set('editor.wordWrap', e.target.checked);
-  });
-  document.getElementById('set-spellcheck').addEventListener('change', (e) => {
-    window.cognitience.config.set('editor.spellcheck', e.target.checked);
   });
   document.getElementById('set-autosave').addEventListener('change', (e) => {
     window.cognitience.config.set('editor.autoSave', e.target.checked);
@@ -1844,23 +1742,20 @@ async function showContextMenu(x, y, spellCtx) {
   const sel = window.getSelection().toString();
   const hasSelection = sel.length > 0;
 
-  // Hunspell suggestions from Electron context-menu event (main → spell:getContext)
   let spellHtml = '';
-  if (CognitienceWP.spellCheckEnabled) {
-    const misspelled = spellCtxToMenu(spellCtx);
-    if (misspelled && misspelled.suggestions.length > 0) {
-      spellHtml = '<div class="context-menu-spell-header">Suggestions</div>';
-      for (const s of misspelled.suggestions.slice(0, 5)) {
-        spellHtml += `<div class="context-menu-item spell-suggestion" data-action="spellfix" data-word="${s}"><span>${s}</span></div>`;
-      }
-      spellHtml += '<div class="context-menu-separator"></div>';
-      spellHtml += `<div class="context-menu-item" data-action="spelladd" data-word="${misspelled.word}"><span>Add "${misspelled.word}" to Dictionary</span></div>`;
-      spellHtml += '<div class="context-menu-separator"></div>';
-    } else if (misspelled) {
-      spellHtml = `<div class="context-menu-item disabled"><span>No suggestions for "${misspelled.word}"</span></div>`;
-      spellHtml += `<div class="context-menu-item" data-action="spelladd" data-word="${misspelled.word}"><span>Add "${misspelled.word}" to Dictionary</span></div>`;
-      spellHtml += '<div class="context-menu-separator"></div>';
+  const misspelled = spellCtxToMenu(spellCtx);
+  if (misspelled && misspelled.suggestions.length > 0) {
+    spellHtml = '<div class="context-menu-spell-header">Suggestions</div>';
+    for (const s of misspelled.suggestions.slice(0, 5)) {
+      spellHtml += `<div class="context-menu-item spell-suggestion" data-action="spellfix" data-word="${s}"><span>${s}</span></div>`;
     }
+    spellHtml += '<div class="context-menu-separator"></div>';
+    spellHtml += `<div class="context-menu-item" data-action="spelladd" data-word="${misspelled.word}"><span>Add "${misspelled.word}" to Dictionary</span></div>`;
+    spellHtml += '<div class="context-menu-separator"></div>';
+  } else if (misspelled) {
+    spellHtml = `<div class="context-menu-item disabled"><span>No suggestions for "${misspelled.word}"</span></div>`;
+    spellHtml += `<div class="context-menu-item" data-action="spelladd" data-word="${misspelled.word}"><span>Add "${misspelled.word}" to Dictionary</span></div>`;
+    spellHtml += '<div class="context-menu-separator"></div>';
   }
 
   contextMenuEl.innerHTML = `
@@ -1941,10 +1836,7 @@ document.addEventListener('click', closeContextMenu);
 function setupStatusBar() {
   const spellEl = document.getElementById('status-spellcheck');
   if (spellEl) {
-    spellEl.addEventListener('click', () => {
-      const newVal = !(CognitienceWP.config['editor.spellcheck'] !== false);
-      window.cognitience.config.set('editor.spellcheck', newVal);
-    });
+    spellEl.addEventListener('click', () => runDocumentSpellcheck());
   }
 }
 
@@ -2540,26 +2432,42 @@ function insertTemplate(templateKey) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SPELLCHECK (native Hunspell via Electron)
+// SPELLCHECK (manual — SymSpell + underline on demand)
 // ═══════════════════════════════════════════════════════════
 
 let lastSpellContextForFix = null;
 
 function initSpellChecker() {
-  console.log('[Cognitience WP] Native Hunspell spellcheck ready');
-  if (window.cognitience && window.cognitience.on) {
-    window.cognitience.on('spell:contextMenu', (ctx) => {
-      const sel = window.getSelection();
-      lastSpellContextForFix = {
-        ...ctx,
-        savedRange: sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null,
-      };
-    });
+  if (typeof window.SymSpell !== 'function') {
+    console.warn('[Cognitience WP] SymSpell not loaded');
+    return;
   }
+  CognitienceWP.spellChecker = new window.SymSpell(2);
+  CognitienceWP.spellChecker.loadDefault();
+  const customWords = CognitienceWP.config['editor.customDictionary'] || [];
+  for (const w of customWords) {
+    CognitienceWP.spellChecker.addCustomWord(w);
+  }
+  if (CognitienceWP.editor) {
+    CognitienceWP.editor.spellcheck = false;
+    CognitienceWP.editor.setAttribute('spellcheck', 'false');
+  }
+  console.log('[Cognitience WP] Manual spellcheck ready (click Spellcheck to underline errors)');
 }
 
-function scheduleSpellCheck() {
-  // Native contenteditable spellcheck handles live underlines.
+function runDocumentSpellcheck() {
+  if (!CognitienceWP.spellChecker || !window.SpellManual) {
+    showNotification('error', 'Spellcheck', 'Spellchecker is not available.');
+    return;
+  }
+  const editor = CognitienceWP.editor;
+  editor.focus();
+  const { count } = window.SpellManual.runManualSpellcheck(editor, CognitienceWP.spellChecker);
+  if (count === 0) {
+    showNotification('success', 'Spellcheck', 'No misspelled words found.');
+  } else {
+    showNotification('info', 'Spellcheck', `Underlined ${count} misspelled word${count === 1 ? '' : 's'}.`);
+  }
 }
 
 function spellCtxToMenu(ctx) {
@@ -2586,9 +2494,11 @@ function applySpellingFix(newWord) {
     : false;
   if (!ok) return;
 
+  if (window.SpellManual) {
+    window.SpellManual.clearMisspelledMarks(CognitienceWP.editor);
+  }
   markDirty();
-  showNotification('info', 'Spell Check', `Applied: ${newWord}`);
-  window.cognitience.spell.clearContext();
+  showNotification('info', 'Spellcheck', `Applied: ${newWord}`);
   lastSpellContextForFix = null;
 }
 
@@ -2596,15 +2506,10 @@ async function addWordToDictionary(word) {
   if (!word) return;
 
   word = word.trim();
-
-  // Add to native Hunspell dictionary via IPC
-  try {
-    await window.cognitience.spell.addWord(word);
-  } catch (e) {
-    console.warn('[Cognitience WP] Could not add word to dictionary', e);
+  if (CognitienceWP.spellChecker) {
+    CognitienceWP.spellChecker.addCustomWord(word);
   }
 
-  // Also save in config for persistence
   const customWords = CognitienceWP.config['editor.customDictionary'] || [];
   if (!customWords.includes(word)) {
     customWords.push(word);
@@ -2612,8 +2517,11 @@ async function addWordToDictionary(word) {
     CognitienceWP.config['editor.customDictionary'] = customWords;
   }
 
+  if (window.SpellManual) {
+    window.SpellManual.clearMisspelledMarks(CognitienceWP.editor);
+  }
   showNotification('success', 'Dictionary', `Added "${word}" to dictionary`);
-  window.cognitience.spell.clearContext();
+  lastSpellContextForFix = null;
 }
 
 // ═══════════════════════════════════════════════════════════

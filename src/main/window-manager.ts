@@ -52,7 +52,7 @@ export class WindowManager {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: false,
-        spellcheck: true,
+        spellcheck: false,
         additionalArguments: [
           `--cognitience-version=${app.getVersion()}`,
           `--cognitience-platform=${process.platform}`,

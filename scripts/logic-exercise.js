@@ -9,7 +9,8 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const SCRATCH = process.env.GROK_SCRATCH || path.join(__dirname, '..', '..');
+const SCRATCH = process.env.GROK_SCRATCH
+  || path.join(require('os').tmpdir(), 'grok-goal-8cbdee8c2cc6', 'implementer');
 const LOG_PATH = path.join(SCRATCH, 'logic-exercise.log');
 const VERSION_LOG = path.join(SCRATCH, 'version-check.log');
 const lines = [];
@@ -179,52 +180,48 @@ function exerciseSpellReplace() {
 }
 
 function exerciseSpellShippedStructure() {
-  log('=== Spell shipped structure (context-menu path; runtime in electron harness) ===');
+  log('=== Spell shipped structure (manual SymSpell + underline on demand) ===');
 
   const indexSrc = fs.readFileSync(path.join(ROOT, 'dist', 'main', 'index.js'), 'utf-8');
   const ipcPos = indexSrc.indexOf('registerAll()');
   const winPos = indexSrc.indexOf('createMainWindow()');
   assert(ipcPos !== -1 && winPos !== -1 && ipcPos < winPos,
     'IPC registerAll must run before createMainWindow in shipped main');
-
-  const preloadSrc = fs.readFileSync(path.join(ROOT, 'dist', 'preload', 'index.js'), 'utf-8');
-  assert(preloadSrc.includes('spell:getContext'), 'preload must expose spell:getContext');
-  assert(preloadSrc.includes('waitForContext'), 'preload must expose spell.waitForContext');
-  assert(preloadSrc.includes('spell:addWord'), 'preload must expose spell:addWord');
-  assert(preloadSrc.includes('spell:contextMenu'), 'preload must listen for spell:contextMenu');
-  assert(!preloadSrc.includes("invoke('spell:check'"), 'removed spell:check IPC must not be in preload');
-
-  const spellContextSrc = fs.readFileSync(path.join(ROOT, 'dist', 'main', 'spell-context.js'), 'utf-8');
-  assert(spellContextSrc.includes('dictionarySuggestions'), 'spell-context must read dictionarySuggestions');
-  assert(spellContextSrc.includes('misspelledWord'), 'spell-context must read misspelledWord');
+  assert(indexSrc.includes('setSpellCheckerEnabled(false)'),
+    'main must keep native session spellcheck disabled');
 
   const rendererSrc = fs.readFileSync(path.join(ROOT, 'dist', 'renderer', 'renderer.js'), 'utf-8');
-  assert(rendererSrc.includes('spell.waitForContext'), 'renderer must call spell.waitForContext on contextmenu');
-  assert(!rendererSrc.includes('resolveSpellContext'), 'renderer must not use resolveSpellContext polling');
+  assert(rendererSrc.includes('runDocumentSpellcheck'), 'renderer must expose manual spellcheck runner');
+  assert(rendererSrc.includes('btn-spellcheck'), 'renderer must wire Spellcheck toolbar button');
+  assert(rendererSrc.includes('cog-misspelled'), 'renderer must use cog-misspelled underline class');
   assert(rendererSrc.includes('replaceMisspelledWord'), 'renderer applySpellingFix must use replaceMisspelledWord');
-  assert(!rendererSrc.includes('spell.checkText'), 'renderer must not call removed spell.checkText');
+  assert(!rendererSrc.includes('spell.waitForContext'), 'renderer must not use native waitForContext spell path');
 
   assert(fs.existsSync(path.join(ROOT, 'dist', 'renderer', 'spell-replace.js')),
     'spell-replace.js must be copied to dist/renderer');
+  assert(fs.existsSync(path.join(ROOT, 'dist', 'renderer', 'spell-manual.js')),
+    'spell-manual.js must be copied to dist/renderer');
+  assert(fs.existsSync(path.join(ROOT, 'dist', 'renderer', 'spellsolver.js')),
+    'spellsolver.js must be copied to dist/renderer');
 
   const spellIpcSrc = fs.readFileSync(path.join(ROOT, 'dist', 'main', 'spell-ipc.js'), 'utf-8');
   assert(spellIpcSrc.includes('spell:getContext'), 'spell-ipc must register spell:getContext');
   assert(spellIpcSrc.includes('addWordToSpellCheckerDictionary'), 'spell-ipc must use session dictionary API');
   assert(!fs.existsSync(path.join(ROOT, 'dist', 'shared', 'spell-check.js')),
     'unused spell-check module must not be in dist');
-  log('spell IPC order + context-menu path verified in dist (runtime: spell-electron-harness.js)');
+  log('manual spellcheck structure verified in dist');
 }
 
 function exerciseVersion() {
   log('=== App version ===');
   const versionLines = [];
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
-  assert(pkg.version === '1.2.0', `package.json version should be 1.2.0, got ${pkg.version}`);
+  assert(pkg.version === '1.2.2', `package.json version should be 1.2.2, got ${pkg.version}`);
   versionLines.push(`package.json version: ${pkg.version}`);
 
   const { APP_VERSION, APP_PUBLISHER, GITHUB_REPO, GITHUB_LATEST_API } =
     require(path.join(ROOT, 'dist', 'shared', 'constants.js'));
-  assert(APP_VERSION === '1.2.0', `APP_VERSION should be 1.2.0, got ${APP_VERSION}`);
+  assert(APP_VERSION === '1.2.2', `APP_VERSION should be 1.2.2, got ${APP_VERSION}`);
   assert(APP_PUBLISHER === 'Maq-Swarm', `APP_PUBLISHER should be Maq-Swarm, got ${APP_PUBLISHER}`);
   assert(pkg.author === 'Maq-Swarm', `package.json author should be Maq-Swarm, got ${pkg.author}`);
   assert(pkg.build && pkg.build.appId === 'com.maqswarm.cognitiencewp',
@@ -372,7 +369,7 @@ function exerciseBuiltAppId() {
     const built = JSON.parse(fs.readFileSync(path.join(extractDir, 'package.json'), 'utf-8'));
     const builtJson = JSON.stringify(built);
     assert(!builtJson.includes('wailonbrowngh'), 'built package.json must not contain wailonbrowngh');
-    assert(built.version === '1.2.0', `built version should be 1.2.0, got ${built.version}`);
+    assert(built.version === '1.2.2', `built version should be 1.2.2, got ${built.version}`);
     assert(built.author === 'Maq-Swarm', `built author should be Maq-Swarm, got ${built.author}`);
     assert(built.cognitienceAppId === 'com.maqswarm.cognitiencewp',
       `asar cognitienceAppId should be com.maqswarm.cognitiencewp, got ${built.cognitienceAppId}`);
@@ -389,6 +386,7 @@ function exerciseBuiltAppId() {
 }
 
 async function main() {
+  fs.mkdirSync(SCRATCH, { recursive: true });
   try {
     exerciseVersion();
     await exerciseExports();
