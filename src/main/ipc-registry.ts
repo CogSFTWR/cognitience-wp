@@ -3,7 +3,7 @@
  * Registers all IPC handlers between the main process and renderer.
  */
 
-import { ipcMain, dialog, clipboard, shell, BrowserWindow } from 'electron';
+import { ipcMain, dialog, clipboard, shell, BrowserWindow, app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
@@ -406,17 +406,18 @@ export class IPCMainRegistry {
           a.name.endsWith('.exe') || a.name.endsWith('Setup.exe')
         )?.browser_download_url || release.html_url;
 
+        const currentVersion = app.getVersion();
         return {
-          currentVersion: '1.1.0',
+          currentVersion,
           latestVersion,
-          updateAvailable: latestVersion && latestVersion !== '1.1.0',
+          updateAvailable: latestVersion && latestVersion !== currentVersion,
           downloadUrl,
           releaseNotes: release.body || '',
           releaseUrl: release.html_url || 'https://github.com/wailonbrowngh/cognitience-wp/releases',
         };
       } catch (err) {
         return {
-          currentVersion: '1.1.0',
+          currentVersion: app.getVersion(),
           latestVersion: null,
           updateAvailable: false,
           error: err instanceof Error ? err.message : String(err),

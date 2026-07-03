@@ -149,7 +149,7 @@ export class PluginHost extends EventEmitter {
     try {
       await this.sendRequest(instance, 'initialize', {
         processId: process.pid,
-        appVersion: '1.0.0',
+        appVersion: app.getVersion(),
         rootUri: `file://${app.getPath('userData')}`,
         capabilities: {
           editor: true,

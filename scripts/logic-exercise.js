@@ -160,6 +160,87 @@ function exerciseSpellcheck() {
   log(`suggest('speling'): ${words.slice(0, 3).join(', ')}`);
 }
 
+function exerciseVersion() {
+  log('=== App version ===');
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
+  assert(pkg.version === '1.2.0', `package.json version should be 1.2.0, got ${pkg.version}`);
+  const { APP_VERSION } = require(path.join(ROOT, 'dist', 'shared', 'constants.js'));
+  assert(APP_VERSION === '1.2.0', `APP_VERSION should be 1.2.0, got ${APP_VERSION}`);
+  log(`version from package.json: ${pkg.version}`);
+}
+
+async function exerciseCustomDictionary() {
+  log('=== Custom dictionary persistence ===');
+  const { IPCMainRegistry } = require(path.join(ROOT, 'dist', 'main', 'ipc-registry.js'));
+  const { PluginHost } = require(path.join(ROOT, 'dist', 'main', 'plugin-host.js'));
+  const { ConfigStore } = require(path.join(ROOT, 'dist', 'main', 'config-store.js'));
+  const { preloadCustomDictionary } = require(path.join(ROOT, 'dist', 'main', 'spell-dictionary.js'));
+
+  const testWord = 'CognitienceXyz';
+  const configStore = new ConfigStore();
+  configStore.set('editor.customDictionary', [testWord]);
+
+  const sessionWords = new Set();
+  const mockSession = {
+    spellChecker: {
+      isMisspelled(word) {
+        return !sessionWords.has(word);
+      },
+      getCorrectionsForMisspelling(word) {
+        return sessionWords.has(word) ? [] : ['fix'];
+      },
+    },
+    addWordToSpellCheckerDictionary(word) {
+      sessionWords.add(word);
+    },
+  };
+
+  const mockWindow = { webContents: { session: mockSession } };
+  const mockWindowManager = {
+    send() {},
+    getMainWindow: () => mockWindow,
+  };
+  const mockExtensionHost = {
+    getExtensions: () => [],
+    installExtension: async () => ({}),
+    uninstallExtension: async () => {},
+    enableExtension: async () => {},
+    disableExtension: async () => {},
+    reloadExtension: async () => {},
+    executeCommand: async () => null,
+    getCommands: () => [],
+  };
+
+  const registry = new IPCMainRegistry(
+    mockWindowManager,
+    mockExtensionHost,
+    configStore,
+    new PluginHost(),
+  );
+  registry.registerAll();
+
+  const spellCheck = mockIpcMain._handlers.get('spell:check');
+  const spellCheckText = mockIpcMain._handlers.get('spell:checkText');
+  const spellAddWord = mockIpcMain._handlers.get('spell:addWord');
+
+  sessionWords.clear();
+  preloadCustomDictionary(mockWindow, configStore);
+
+  const afterRestart = await spellCheck(null, testWord);
+  assert(afterRestart.correct, 'word should persist after simulated restart');
+
+  const runtimeWord = 'RuntimeCustomWord';
+  await spellAddWord(null, runtimeWord);
+  const afterAdd = await spellCheck(null, runtimeWord);
+  assert(afterAdd.correct, 'word should be correct after addWord');
+
+  const text = `Hello ${testWord} and ${runtimeWord} world.`;
+  const textErrors = await spellCheckText(null, text);
+  const found = textErrors.some((e) => e.word === testWord || e.word === runtimeWord);
+  assert(!found, 'checkText should not flag persisted custom words');
+  log(`custom word "${testWord}" persists across restart`);
+}
+
 async function exerciseExtensionApi() {
   log('=== Extension command registry ===');
   const commands = new Map();
@@ -252,8 +333,10 @@ function exerciseIpcRegistry() {
 
 async function main() {
   try {
+    exerciseVersion();
     await exerciseExports();
     exerciseSpellcheck();
+    await exerciseCustomDictionary();
     await exerciseExtensionApi();
     await exerciseIpcRegistry();
     log('ALL LOGIC EXERCISES PASSED');

@@ -2,8 +2,10 @@
  * Cognitience WP — Shared Constants
  */
 
+import { getPackageVersion } from './version';
+
 export const APP_NAME = 'Cognitience WP';
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = getPackageVersion();
 export const APP_PUBLISHER = 'wailonbrowngh';
 export const GITHUB_REPO = 'wailonbrowngh/cognitience-wp';
 export const GITHUB_RELEASES_URL = 'https://github.com/wailonbrowngh/cognitience-wp/releases';

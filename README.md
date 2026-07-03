@@ -9,8 +9,8 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 ## Download & Install
 
 Download from the [releases page](https://github.com/wailonbrowngh/cognitience-wp/releases):
-- `Cognitience WP Setup 1.1.0.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
-- `Cognitience-WP-Portable-1.1.0.exe` — Single portable EXE (no install needed, just run)
+- `Cognitience WP Setup 1.2.0.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
+- `Cognitience-WP-Portable-1.2.0.exe` — Single portable EXE (no install needed, just run)
 
 ## Features
 
@@ -24,7 +24,7 @@ Download from the [releases page](https://github.com/wailonbrowngh/cognitience-w
 - Text and background color selection
 - Font size control
 - Paragraph alignment (left, center, right, justify)
-- Spell check (SymSpell-based, offline, custom dictionary), auto-save, find and replace
+- Spell check (native Hunspell, offline, custom dictionary persists across restarts), auto-save, find and replace
 
 ### Document Templates
 - **arXiv Research Paper** — Academic paper format with two-column layout, abstract, sections, equations, tables, and references
@@ -73,6 +73,7 @@ Access via Insert → Templates, or the Command Palette.
 - External tools (Claude Code, Codex, etc.) can plug in
 - Full editor access: get/set content, selection, insertion
 - Language-agnostic (Node.js, Python, anything that speaks JSON-RPC)
+- **Python spellcheck** via [pyspellchecker](https://pypi.org/project/pyspellchecker/) — see `python/spellcheck.py` (`pip install pyspellchecker`)
 - See [Plugin Protocol](docs/plugin-protocol.md)
 
 ## Keyboard Shortcuts

@@ -118,6 +118,9 @@ const cognitionAPI = {
   },
 
   // ─── Platform Info ─────────────────────────────────────────
+  version: process.argv
+    .find((arg) => arg.startsWith('--cognitience-version='))
+    ?.slice('--cognitience-version='.length) ?? '',
   platform: process.platform,
   versions: {
     electron: process.versions.electron,

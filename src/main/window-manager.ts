@@ -3,7 +3,7 @@
  * Manages BrowserWindow lifecycle, state restoration, and multi-window support.
  */
 
-import { BrowserWindow, shell, nativeImage, screen } from 'electron';
+import { BrowserWindow, shell, nativeImage, screen, app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ConfigStore } from './config-store';
@@ -54,7 +54,7 @@ export class WindowManager {
         sandbox: false,
         spellcheck: true,
         additionalArguments: [
-          `--cognitience-version=1.1.0`,
+          `--cognitience-version=${app.getVersion()}`,
           `--cognitience-platform=${process.platform}`,
         ],
       },

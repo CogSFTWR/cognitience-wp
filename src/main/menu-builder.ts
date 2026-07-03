@@ -483,7 +483,7 @@ export class MenuBuilder {
                   type: 'info',
                   title: 'About Cognitience WP',
                   message: 'Cognitience WP',
-                  detail: 'The VS Code of word processors.\n\nVersion: 1.1.0\nPublisher: wailonbrowngh\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
+                  detail: 'The VS Code of word processors.\n\nVersion: ' + app.getVersion() + '\nPublisher: wailonbrowngh\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
                   icon: undefined,
                 });
               }

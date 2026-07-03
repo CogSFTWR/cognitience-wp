@@ -1,6 +1,6 @@
 {
   "name": "cognitience-wp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Cognitience WP — The VS Code of word processors. An open-source, extensible word processor built on Electron + TypeScript.",
   "main": "dist/main/index.js",
   "scripts": {

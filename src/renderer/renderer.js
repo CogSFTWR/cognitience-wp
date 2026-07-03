@@ -925,7 +925,7 @@ function renderSettings(container) {
         <div class="setting-row">
           <span class="setting-label">Current Version</span>
           <div class="setting-control">
-            <span style="font-size:13px;color:var(--fg-tab);">v${(CognitienceWP.config && CognitienceWP.config['app.version']) || '1.1.0'}</span>
+            <span style="font-size:13px;color:var(--fg-tab);">v${(window.cognitience && window.cognitience.version) || '0.0.0'}</span>
           </div>
         </div>
         <div class="setting-row">
@@ -2331,8 +2331,9 @@ function showWordCountDialog() {
 }
 
 function showAboutDialog() {
+  const ver = (window.cognitience && window.cognitience.version) || '0.0.0';
   showNotification('info', 'About Cognitience WP',
-    'Version 1.0.0 · The VS Code of word processors · MIT License · wailonbrowngh');
+    `Version ${ver} · The VS Code of word processors · MIT License · wailonbrowngh`);
 }
 
 function showShortcutsHelp() {
