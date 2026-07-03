@@ -6,7 +6,7 @@ import { getPackageVersion } from './version';
 
 export const APP_NAME = 'Cognitience WP';
 export const APP_VERSION = getPackageVersion();
-export const APP_PUBLISHER = 'wailonbrowngh';
+export const APP_PUBLISHER = 'Maq-Swarm';
 export const GITHUB_REPO = 'Maq-Swarm/cognitience-wp';
 export const GITHUB_RELEASES_URL = 'https://github.com/Maq-Swarm/cognitience-wp/releases';
 export const GITHUB_LATEST_API = 'https://api.github.com/repos/Maq-Swarm/cognitience-wp/releases/latest';

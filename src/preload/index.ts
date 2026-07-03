@@ -148,8 +148,14 @@ const cognitionAPI = {
 
   // ─── Spellcheck (native Hunspell via context-menu + session dictionary) ──
   spell: {
-    getContext: () => ipcRenderer.invoke('spell:getContext').then((ctx) => ctx || lastSpellContext),
-    clearContext: () => ipcRenderer.invoke('spell:clearContext'),
+    getContext: () => {
+      if (lastSpellContext) return Promise.resolve(lastSpellContext);
+      return ipcRenderer.invoke('spell:getContext');
+    },
+    clearContext: () => {
+      lastSpellContext = null;
+      return ipcRenderer.invoke('spell:clearContext');
+    },
     addWord: (word: string) => ipcRenderer.invoke('spell:addWord', word),
   },
 

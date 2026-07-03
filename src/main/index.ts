@@ -38,8 +38,11 @@ app.whenReady().then(async () => {
   // Initialize external plugin host (JSON-RPC over stdio)
   pluginHost = new PluginHost();
 
-  // Create window manager
+  // Create window manager and register IPC before spell/dictionary setup uses handlers
   windowManager = new WindowManager(configStore, extensionHost);
+  const ipcRegistry = new IPCMainRegistry(windowManager, extensionHost, configStore, pluginHost);
+  ipcRegistry.registerAll();
+
   mainWindow = windowManager.createMainWindow();
 
   // Pre-load custom dictionary words into Hunspell session
@@ -53,10 +56,6 @@ app.whenReady().then(async () => {
   // Build and set menu
   const menuBuilder = new MenuBuilder(windowManager, extensionHost, configStore);
   Menu.setApplicationMenu(menuBuilder.buildMenu());
-
-  // Register IPC handlers
-  const ipcRegistry = new IPCMainRegistry(windowManager, extensionHost, configStore, pluginHost);
-  ipcRegistry.registerAll();
 
   // Activate startup extensions
   await extensionHost.activateByEvent('onStartup');

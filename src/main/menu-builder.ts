@@ -8,6 +8,7 @@ import * as path from 'path';
 import { WindowManager } from './window-manager';
 import { ExtensionHost } from './extension-host';
 import { ConfigStore } from './config-store';
+import { APP_PUBLISHER, GITHUB_RELEASES_URL } from '../shared/constants';
 
 export class MenuBuilder {
   constructor(
@@ -444,11 +445,11 @@ export class MenuBuilder {
         submenu: [
           {
             label: 'Documentation',
-            click: () => shell.openExternal('https://github.com/wailonbrowngh/cognitience-wp#readme'),
+            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognitience-wp#readme'),
           },
           {
             label: 'Extension API Reference',
-            click: () => shell.openExternal('https://github.com/wailonbrowngh/cognitience-wp/tree/main/docs'),
+            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognitience-wp/tree/main/docs'),
           },
           {
             label: 'Keyboard Shortcuts',
@@ -458,7 +459,7 @@ export class MenuBuilder {
           { type: 'separator' },
           {
             label: 'Report Issue',
-            click: () => shell.openExternal('https://github.com/wailonbrowngh/cognitience-wp/issues'),
+            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognitience-wp/issues'),
           },
           {
             label: 'Check for Updates',
@@ -483,7 +484,7 @@ export class MenuBuilder {
                   type: 'info',
                   title: 'About Cognitience WP',
                   message: 'Cognitience WP',
-                  detail: 'The VS Code of word processors.\n\nVersion: ' + app.getVersion() + '\nPublisher: wailonbrowngh\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
+                  detail: 'The VS Code of word processors.\n\nVersion: ' + app.getVersion() + '\nPublisher: ' + APP_PUBLISHER + '\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
                   icon: undefined,
                 });
               }

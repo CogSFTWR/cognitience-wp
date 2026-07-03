@@ -130,4 +130,4 @@ Or manually:
 
 ## License
 
-MIT — © wailonbrowngh
+MIT — © Maq-Swarm

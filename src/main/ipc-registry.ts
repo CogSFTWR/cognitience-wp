@@ -15,7 +15,7 @@ import { ConfigStore } from './config-store';
 import { ExportManager } from './export-manager';
 import { PluginHost } from './plugin-host';
 import { BUILTIN_THEMES, GITHUB_LATEST_API, GITHUB_RELEASES_URL } from '../shared/constants';
-import { clearLastSpellContext, getLastSpellContext } from './spell-context';
+import { registerSpellIpcHandlers } from './spell-ipc';
 
 export class IPCMainRegistry {
   private exportManager: ExportManager;
@@ -522,18 +522,6 @@ module.exports = { activate, deactivate };
   // ─── Spellcheck (Hunspell via context-menu + session custom dictionary) ──
 
   private registerSpellcheckHandlers() {
-    ipcMain.handle('spell:getContext', async () => getLastSpellContext());
-
-    ipcMain.handle('spell:clearContext', async () => {
-      clearLastSpellContext();
-      return { success: true };
-    });
-
-    ipcMain.handle('spell:addWord', async (_, word: string) => {
-      const win = this.windowManager.getMainWindow();
-      if (!win) return { success: false };
-      win.webContents.session.addWordToSpellCheckerDictionary(word);
-      return { success: true };
-    });
+    registerSpellIpcHandlers(this.windowManager);
   }
 }

@@ -185,11 +185,11 @@ function setupEditorEvents() {
     // Ctrl+Shift+P handled globally
   });
 
-  // Context menu on right-click (main process captures Hunspell suggestions first)
+  // Context menu on right-click (main fires context-menu before this handler)
   editor.addEventListener('contextmenu', async (e) => {
     e.preventDefault();
-    await new Promise((r) => setTimeout(r, 0));
-    showContextMenu(e.clientX, e.clientY);
+    const spellCtx = await resolveSpellContext();
+    showContextMenu(e.clientX, e.clientY, spellCtx);
   });
 
   // Track scroll for auto-save
@@ -1691,7 +1691,7 @@ function showNotification(type, title, message) {
 
 let contextMenuEl = null;
 
-async function showContextMenu(x, y) {
+async function showContextMenu(x, y, spellCtx) {
   closeContextMenu();
   contextMenuEl = document.createElement('div');
   contextMenuEl.className = 'context-menu';
@@ -1704,7 +1704,7 @@ async function showContextMenu(x, y) {
   // Hunspell suggestions from Electron context-menu event (main → spell:getContext)
   let spellHtml = '';
   if (CognitienceWP.spellCheckEnabled) {
-    const misspelled = await getSpellContextAtPoint(x, y);
+    const misspelled = spellCtxToMenu(spellCtx);
     if (misspelled && misspelled.suggestions.length > 0) {
       spellHtml = '<div class="context-menu-spell-header">Suggestions</div>';
       for (const s of misspelled.suggestions.slice(0, 5)) {
@@ -2329,7 +2329,7 @@ function showWordCountDialog() {
 function showAboutDialog() {
   const ver = (window.cognitience && window.cognitience.version) || '0.0.0';
   showNotification('info', 'About Cognitience WP',
-    `Version ${ver} · The VS Code of word processors · MIT License · wailonbrowngh`);
+    `Version ${ver} · The VS Code of word processors · MIT License · Maq-Swarm`);
 }
 
 function showShortcutsHelp() {
@@ -2402,24 +2402,33 @@ function insertTemplate(templateKey) {
 
 function initSpellChecker() {
   console.log('[Cognitience WP] Native Hunspell spellcheck ready');
+  if (window.cognitience && window.cognitience.on) {
+    window.cognitience.on('spell:contextMenu', () => {});
+  }
 }
 
 function scheduleSpellCheck() {
   // Native contenteditable spellcheck handles live underlines.
 }
 
-async function getSpellContextAtPoint(x, y) {
-  try {
-    const ctx = await window.cognitience.spell.getContext();
-    if (!ctx || !ctx.misspelledWord) return null;
-    if (Math.abs(ctx.x - x) > 8 || Math.abs(ctx.y - y) > 8) return null;
-    return {
-      word: ctx.misspelledWord,
-      suggestions: ctx.suggestions || [],
-    };
-  } catch (e) {
-    return null;
+async function resolveSpellContext() {
+  const deadline = Date.now() + 300;
+  while (Date.now() < deadline) {
+    try {
+      const ctx = await window.cognitience.spell.getContext();
+      if (ctx && ctx.misspelledWord) return ctx;
+    } catch (e) { /* retry */ }
+    await new Promise((r) => setTimeout(r, 15));
   }
+  return null;
+}
+
+function spellCtxToMenu(ctx) {
+  if (!ctx || !ctx.misspelledWord) return null;
+  return {
+    word: ctx.misspelledWord,
+    suggestions: ctx.suggestions || [],
+  };
 }
 
 function applySpellingFix(newWord) {

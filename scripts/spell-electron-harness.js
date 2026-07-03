@@ -1,15 +1,17 @@
 /**
- * Electron harness: session custom dictionary via real webContents.session APIs.
+ * Electron harness: real BrowserWindow + IPCMainRegistry spell handlers +
+ * context-menu event drive + renderer getContext + session dictionary.
  */
 'use strict';
 
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { app, BrowserWindow } = require('electron');
 
 const ROOT = path.join(__dirname, '..');
-const SCRATCH = process.env.GROK_SCRATCH || path.join(__dirname, '..', '..');
-const LOG_PATH = path.join(SCRATCH, 'spell-electron-harness.log');
+const SCRATCH = process.env.GROK_SCRATCH || path.join(os.tmpdir(), 'cogwp-spell-harness');
+const LOG_PATH = path.join(SCRATCH, `spell-electron-harness-${Date.now()}.log`);
 const CUSTOM_WORD = 'CognitienceXyz';
 const lines = [];
 
@@ -24,52 +26,111 @@ function assert(cond, msg) {
 }
 
 function writeLog() {
-  try {
-    fs.writeFileSync(LOG_PATH, lines.join('\n') + '\n', 'utf-8');
-  } catch (e) {
-    console.error('Could not write harness log:', e.message);
+  fs.mkdirSync(SCRATCH, { recursive: true });
+  fs.writeFileSync(LOG_PATH, lines.join('\n') + '\n', 'utf-8');
+  log(`wrote ${LOG_PATH}`);
+}
+
+async function waitForPreload(win) {
+  const start = Date.now();
+  while (Date.now() - start < 15000) {
+    const ok = await win.webContents.executeJavaScript('!!(window.cognitience && window.cognitience.spell)');
+    if (ok) return;
+    await new Promise((r) => setTimeout(r, 50));
   }
+  throw new Error('preload spell API not ready');
 }
 
 async function runHarness() {
-  log('=== Spell Electron harness (session custom dictionary) ===');
+  log('=== Spell Electron harness (real window + IPC + context-menu) ===');
 
-  const { preloadCustomDictionary } = require(path.join(ROOT, 'dist', 'main', 'spell-dictionary.js'));
+  const { registerSpellIpcHandlers } = require(path.join(ROOT, 'dist', 'main', 'spell-ipc.js'));
   const { ConfigStore } = require(path.join(ROOT, 'dist', 'main', 'config-store.js'));
+  const {
+    attachSpellContextMenu,
+    getLastSpellContext,
+    clearLastSpellContext,
+  } = require(path.join(ROOT, 'dist', 'main', 'spell-context.js'));
+  const { preloadCustomDictionary } = require(path.join(ROOT, 'dist', 'main', 'spell-dictionary.js'));
 
   await app.whenReady();
 
-  const win = new BrowserWindow({
+  const configStore = new ConfigStore();
+  configStore.set('editor.customDictionary', [CUSTOM_WORD]);
+
+  let win = null;
+  const windowManager = {
+    send() {},
+    getMainWindow: () => win,
+  };
+
+  registerSpellIpcHandlers(windowManager);
+
+  win = new BrowserWindow({
     show: false,
-    webPreferences: { spellcheck: true },
+    width: 640,
+    height: 480,
+    webPreferences: {
+      preload: path.join(ROOT, 'dist', 'preload', 'index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: true,
+      additionalArguments: [`--cognitience-version=${require(path.join(ROOT, 'package.json')).version}`],
+    },
   });
 
   const session = win.webContents.session;
   session.setSpellCheckerLanguages(['en-US']);
   session.setSpellCheckerEnabled(true);
+  attachSpellContextMenu(win);
 
-  const configStore = new ConfigStore();
-  configStore.set('editor.customDictionary', [CUSTOM_WORD]);
+  await win.loadURL(
+    'data:text/html;charset=utf-8,'
+      + encodeURIComponent('<!doctype html><body><div contenteditable spellcheck id="ed">speling test</div></body></html>'),
+  );
+  await waitForPreload(win);
+
+  clearLastSpellContext();
+  const menuParams = {
+    misspelledWord: 'speling',
+    dictionarySuggestions: ['spelling', 'speeling', 'spieling'],
+    x: 42,
+    y: 36,
+    isEditable: true,
+  };
+
+  win.webContents.emit('context-menu', { preventDefault: () => {} }, menuParams);
+
+  const mainCtx = getLastSpellContext();
+  assert(mainCtx && mainCtx.misspelledWord === 'speling', 'main getLastSpellContext after context-menu emit');
+  assert(mainCtx.suggestions.length >= 2, 'main context should capture dictionarySuggestions');
+  log(`context-menu emit → main: ${mainCtx.misspelledWord} → ${mainCtx.suggestions.slice(0, 3).join(', ')}`);
+
+  await new Promise((r) => setTimeout(r, 100));
+  const rendererCtx = await win.webContents.executeJavaScript('window.cognitience.spell.getContext()');
+  assert(rendererCtx && rendererCtx.misspelledWord === 'speling',
+    `renderer getContext failed: ${JSON.stringify(rendererCtx)}`);
+  assert(Array.isArray(rendererCtx.suggestions) && rendererCtx.suggestions.length >= 2,
+    'renderer getContext should return suggestions');
+  log(`renderer spell.getContext: ${rendererCtx.misspelledWord} → ${rendererCtx.suggestions.slice(0, 3).join(', ')}`);
+
+  const addRes = await win.webContents.executeJavaScript('window.cognitience.spell.addWord("HarnessRuntimeWord")');
+  assert(addRes && addRes.success === true, 'spell:addWord via preload should succeed');
+  const afterAdd = await session.listWordsInSpellCheckerDictionary();
+  assert(afterAdd.map((w) => w.toLowerCase()).includes('harnessruntimeword'),
+    `session should list HarnessRuntimeWord, got ${afterAdd.join(', ')}`);
+  log('spell:addWord via real IPC + session: ok');
 
   for (const w of await session.listWordsInSpellCheckerDictionary()) {
     session.removeWordFromSpellCheckerDictionary(w);
   }
-
   preloadCustomDictionary(win, configStore);
 
-  const dictWords = await session.listWordsInSpellCheckerDictionary();
-  assert(
-    dictWords.map((w) => w.toLowerCase()).includes(CUSTOM_WORD.toLowerCase()),
-    `custom word should be in session dictionary, got: ${dictWords.join(', ')}`,
-  );
-  log(`preloadCustomDictionary: ${CUSTOM_WORD} in session (${dictWords.length} word(s))`);
-
-  const added = session.addWordToSpellCheckerDictionary('RuntimeWord');
-  assert(added === true, 'addWordToSpellCheckerDictionary should return true');
-  const afterRuntime = await session.listWordsInSpellCheckerDictionary();
-  assert(afterRuntime.map((w) => w.toLowerCase()).includes('runtimeword'),
-    'runtime addWord should persist in session list');
-  log(`session.addWordToSpellCheckerDictionary: RuntimeWord ok`);
+  const afterRestart = await session.listWordsInSpellCheckerDictionary();
+  assert(afterRestart.map((w) => w.toLowerCase()).includes(CUSTOM_WORD.toLowerCase()),
+    `custom word should persist after preloadCustomDictionary restart simulation, got ${afterRestart.join(', ')}`);
+  log(`preloadCustomDictionary restart: ${CUSTOM_WORD} in session (${afterRestart.length} word(s))`);
 
   win.close();
   log('SPELL ELECTRON HARNESS PASSED');
