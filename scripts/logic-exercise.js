@@ -149,6 +149,35 @@ async function exerciseExports() {
   }
 }
 
+function exerciseSpellReplace() {
+  log('=== Spell replace (pure DOM unit) ===');
+  const { JSDOM } = require('jsdom');
+  const { replaceMisspelledWord } = require(path.join(ROOT, 'dist', 'renderer', 'spell-replace.js'));
+
+  const dom = new JSDOM('<!DOCTYPE html><body><div id="ed" contenteditable>speling test</div></body>', {
+    pretendToBeVisual: true,
+  });
+  const { window } = dom;
+  const { document } = window;
+  global.window = window;
+  global.document = document;
+  global.Range = window.Range;
+  global.NodeFilter = window.NodeFilter;
+
+  const editor = document.getElementById('ed');
+  const range = document.createRange();
+  range.setStart(editor.firstChild, 0);
+  range.setEnd(editor.firstChild, 6);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  const ok = replaceMisspelledWord(editor, 'speling', 'spelling');
+  assert(ok, 'replaceMisspelledWord should return true');
+  assert(editor.textContent === 'spelling test', `expected "spelling test", got "${editor.textContent}"`);
+  log('replaceMisspelledWord: speling → spelling test');
+}
+
 function exerciseSpellShippedStructure() {
   log('=== Spell shipped structure (context-menu path; runtime in electron harness) ===');
 
@@ -169,8 +198,13 @@ function exerciseSpellShippedStructure() {
   assert(spellContextSrc.includes('misspelledWord'), 'spell-context must read misspelledWord');
 
   const rendererSrc = fs.readFileSync(path.join(ROOT, 'dist', 'renderer', 'renderer.js'), 'utf-8');
-  assert(rendererSrc.includes('resolveSpellContext'), 'renderer must use resolveSpellContext');
+  assert(rendererSrc.includes('spell.getContext()'), 'renderer must call spell.getContext on contextmenu');
+  assert(!rendererSrc.includes('resolveSpellContext'), 'renderer must not use resolveSpellContext polling');
+  assert(rendererSrc.includes('replaceMisspelledWord'), 'renderer applySpellingFix must use replaceMisspelledWord');
   assert(!rendererSrc.includes('spell.checkText'), 'renderer must not call removed spell.checkText');
+
+  assert(fs.existsSync(path.join(ROOT, 'dist', 'renderer', 'spell-replace.js')),
+    'spell-replace.js must be copied to dist/renderer');
 
   const spellIpcSrc = fs.readFileSync(path.join(ROOT, 'dist', 'main', 'spell-ipc.js'), 'utf-8');
   assert(spellIpcSrc.includes('spell:getContext'), 'spell-ipc must register spell:getContext');
@@ -192,6 +226,9 @@ function exerciseVersion() {
   assert(APP_VERSION === '1.2.0', `APP_VERSION should be 1.2.0, got ${APP_VERSION}`);
   assert(APP_PUBLISHER === 'Maq-Swarm', `APP_PUBLISHER should be Maq-Swarm, got ${APP_PUBLISHER}`);
   assert(pkg.author === 'Maq-Swarm', `package.json author should be Maq-Swarm, got ${pkg.author}`);
+  assert(pkg.build && pkg.build.appId === 'com.maqswarm.cognitiencewp',
+    `build.appId should be com.maqswarm.cognitiencewp, got ${pkg.build && pkg.build.appId}`);
+  versionLines.push(`build.appId: ${pkg.build.appId}`);
   versionLines.push(`APP_VERSION constant: ${APP_VERSION}`);
   versionLines.push(`APP_PUBLISHER: ${APP_PUBLISHER}`);
   versionLines.push(`GITHUB_REPO: ${GITHUB_REPO}`);
@@ -315,6 +352,7 @@ async function main() {
   try {
     exerciseVersion();
     await exerciseExports();
+    exerciseSpellReplace();
     exerciseSpellShippedStructure();
     await exerciseExtensionApi();
     await exerciseIpcRegistry();

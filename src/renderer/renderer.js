@@ -188,7 +188,8 @@ function setupEditorEvents() {
   // Context menu on right-click (main fires context-menu before this handler)
   editor.addEventListener('contextmenu', async (e) => {
     e.preventDefault();
-    const spellCtx = await resolveSpellContext();
+    const spellCtx = await window.cognitience.spell.getContext();
+    lastSpellContextForFix = spellCtx;
     showContextMenu(e.clientX, e.clientY, spellCtx);
   });
 
@@ -2400,27 +2401,19 @@ function insertTemplate(templateKey) {
 // SPELLCHECK (native Hunspell via Electron)
 // ═══════════════════════════════════════════════════════════
 
+let lastSpellContextForFix = null;
+
 function initSpellChecker() {
   console.log('[Cognitience WP] Native Hunspell spellcheck ready');
   if (window.cognitience && window.cognitience.on) {
-    window.cognitience.on('spell:contextMenu', () => {});
+    window.cognitience.on('spell:contextMenu', (ctx) => {
+      lastSpellContextForFix = ctx;
+    });
   }
 }
 
 function scheduleSpellCheck() {
   // Native contenteditable spellcheck handles live underlines.
-}
-
-async function resolveSpellContext() {
-  const deadline = Date.now() + 300;
-  while (Date.now() < deadline) {
-    try {
-      const ctx = await window.cognitience.spell.getContext();
-      if (ctx && ctx.misspelledWord) return ctx;
-    } catch (e) { /* retry */ }
-    await new Promise((r) => setTimeout(r, 15));
-  }
-  return null;
 }
 
 function spellCtxToMenu(ctx) {
@@ -2432,9 +2425,19 @@ function spellCtxToMenu(ctx) {
 }
 
 function applySpellingFix(newWord) {
-  document.execCommand('insertText', false, newWord);
+  const ctx = lastSpellContextForFix;
+  if (!ctx || !ctx.misspelledWord) return;
+
+  const replaceFn = window.SpellReplace && window.SpellReplace.replaceMisspelledWord;
+  const ok = replaceFn
+    ? replaceFn(CognitienceWP.editor, ctx.misspelledWord, newWord)
+    : false;
+  if (!ok) return;
+
   markDirty();
   showNotification('info', 'Spell Check', `Applied: ${newWord}`);
+  window.cognitience.spell.clearContext();
+  lastSpellContextForFix = null;
 }
 
 async function addWordToDictionary(word) {

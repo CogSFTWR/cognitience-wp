@@ -55,7 +55,7 @@
     "marked": "^18.0.5"
   },
   "build": {
-    "appId": "com.wailonbrowngh.cognitiencewp",
+    "appId": "com.maqswarm.cognitiencewp",
     "productName": "Cognitience WP",
     "directories": {
       "output": "release",
