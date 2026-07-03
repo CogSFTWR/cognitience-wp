@@ -152,6 +152,24 @@ const cognitionAPI = {
       if (lastSpellContext) return Promise.resolve(lastSpellContext);
       return ipcRenderer.invoke('spell:getContext');
     },
+    waitForContext: (timeoutMs = 400) => {
+      if (lastSpellContext) return Promise.resolve(lastSpellContext);
+      return new Promise((resolve) => {
+        const deadline = Date.now() + timeoutMs;
+        const poll = () => {
+          if (lastSpellContext) {
+            resolve(lastSpellContext);
+            return;
+          }
+          if (Date.now() >= deadline) {
+            ipcRenderer.invoke('spell:getContext').then(resolve);
+            return;
+          }
+          setTimeout(poll, 10);
+        };
+        poll();
+      });
+    },
     clearContext: () => {
       lastSpellContext = null;
       return ipcRenderer.invoke('spell:clearContext');

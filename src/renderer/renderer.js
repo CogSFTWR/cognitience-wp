@@ -185,10 +185,10 @@ function setupEditorEvents() {
     // Ctrl+Shift+P handled globally
   });
 
-  // Context menu on right-click (main fires context-menu before this handler)
+  // Context menu on right-click (main sends spell:contextMenu before renderer handler runs)
   editor.addEventListener('contextmenu', async (e) => {
     e.preventDefault();
-    const spellCtx = await window.cognitience.spell.getContext();
+    const spellCtx = await window.cognitience.spell.waitForContext(400);
     lastSpellContextForFix = spellCtx;
     showContextMenu(e.clientX, e.clientY, spellCtx);
   });

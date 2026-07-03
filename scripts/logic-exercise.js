@@ -189,6 +189,7 @@ function exerciseSpellShippedStructure() {
 
   const preloadSrc = fs.readFileSync(path.join(ROOT, 'dist', 'preload', 'index.js'), 'utf-8');
   assert(preloadSrc.includes('spell:getContext'), 'preload must expose spell:getContext');
+  assert(preloadSrc.includes('waitForContext'), 'preload must expose spell.waitForContext');
   assert(preloadSrc.includes('spell:addWord'), 'preload must expose spell:addWord');
   assert(preloadSrc.includes('spell:contextMenu'), 'preload must listen for spell:contextMenu');
   assert(!preloadSrc.includes("invoke('spell:check'"), 'removed spell:check IPC must not be in preload');
@@ -198,7 +199,7 @@ function exerciseSpellShippedStructure() {
   assert(spellContextSrc.includes('misspelledWord'), 'spell-context must read misspelledWord');
 
   const rendererSrc = fs.readFileSync(path.join(ROOT, 'dist', 'renderer', 'renderer.js'), 'utf-8');
-  assert(rendererSrc.includes('spell.getContext()'), 'renderer must call spell.getContext on contextmenu');
+  assert(rendererSrc.includes('spell.waitForContext'), 'renderer must call spell.waitForContext on contextmenu');
   assert(!rendererSrc.includes('resolveSpellContext'), 'renderer must not use resolveSpellContext polling');
   assert(rendererSrc.includes('replaceMisspelledWord'), 'renderer applySpellingFix must use replaceMisspelledWord');
   assert(!rendererSrc.includes('spell.checkText'), 'renderer must not call removed spell.checkText');
@@ -348,12 +349,52 @@ function exerciseIpcRegistry() {
   });
 }
 
+function exerciseBuiltAppId() {
+  const unpackedPkg = path.join(ROOT, 'release', 'win-unpacked', 'resources', 'app.asar');
+  const loosePkg = path.join(ROOT, 'release', 'win-unpacked', 'resources', 'app', 'package.json');
+  log('=== Built appId (win-unpacked) ===');
+  if (fs.existsSync(loosePkg)) {
+    const built = JSON.parse(fs.readFileSync(loosePkg, 'utf-8'));
+    assert(built.build && built.build.appId === 'com.maqswarm.cognitiencewp',
+      `built package.json appId should be com.maqswarm.cognitiencewp, got ${built.build && built.build.appId}`);
+    log(`loose package.json appId: ${built.build.appId}`);
+    return;
+  }
+  if (fs.existsSync(unpackedPkg)) {
+    const { execSync } = require('child_process');
+    const extractDir = path.join(SCRATCH, 'asar-extract');
+    fs.rmSync(extractDir, { recursive: true, force: true });
+    execSync(`npx --yes @electron/asar extract "${unpackedPkg}" "${extractDir}"`, {
+      cwd: ROOT,
+      stdio: 'pipe',
+      shell: true,
+    });
+    const built = JSON.parse(fs.readFileSync(path.join(extractDir, 'package.json'), 'utf-8'));
+    const builtJson = JSON.stringify(built);
+    assert(!builtJson.includes('wailonbrowngh'), 'built package.json must not contain wailonbrowngh');
+    assert(built.version === '1.2.0', `built version should be 1.2.0, got ${built.version}`);
+    assert(built.author === 'Maq-Swarm', `built author should be Maq-Swarm, got ${built.author}`);
+    assert(built.cognitienceAppId === 'com.maqswarm.cognitiencewp',
+      `asar cognitienceAppId should be com.maqswarm.cognitiencewp, got ${built.cognitienceAppId}`);
+    const updateYml = path.join(ROOT, 'release', 'win-unpacked', 'resources', 'app-update.yml');
+    if (fs.existsSync(updateYml)) {
+      const yml = fs.readFileSync(updateYml, 'utf-8');
+      assert(yml.includes('owner: Maq-Swarm'), 'app-update.yml owner should be Maq-Swarm');
+      log('app-update.yml owner: Maq-Swarm');
+    }
+    log(`asar cognitienceAppId: ${built.cognitienceAppId}, author: ${built.author}`);
+    return;
+  }
+  log('(skip: release/win-unpacked not present — run package:win first)');
+}
+
 async function main() {
   try {
     exerciseVersion();
     await exerciseExports();
     exerciseSpellReplace();
     exerciseSpellShippedStructure();
+    exerciseBuiltAppId();
     await exerciseExtensionApi();
     await exerciseIpcRegistry();
     log('ALL LOGIC EXERCISES PASSED');
