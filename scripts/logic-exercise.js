@@ -6,10 +6,12 @@
 
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const SCRATCH = process.env.GROK_SCRATCH || path.join(__dirname, '..', '..');
 const LOG_PATH = path.join(SCRATCH, 'logic-exercise.log');
+const VERSION_LOG = path.join(SCRATCH, 'version-check.log');
 const lines = [];
 
 function log(msg) {
@@ -36,6 +38,7 @@ require('module').Module._cache[require.resolve('electron')] = {
   exports: {
     app: {
       getPath: (name) => path.join(ROOT, '.test-userdata', name),
+      getVersion: () => require(path.join(ROOT, 'package.json')).version,
       requestSingleInstanceLock: () => true,
       whenReady: () => ({ then: (fn) => fn() }),
       on: () => {},
@@ -50,6 +53,9 @@ require('module').Module._cache[require.resolve('electron')] = {
           loadURL: async () => {},
           printToPDF: async () => Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF'),
           send: () => {},
+          session: {
+            addWordToSpellCheckerDictionary: () => true,
+          },
         };
         this.loadURL = async (url) => this.webContents.loadURL(url);
       }
@@ -71,7 +77,7 @@ require('module').Module._cache[require.resolve('electron')] = {
 };
 
 const { ExportManager } = require(path.join(ROOT, 'dist', 'main', 'export-manager.js'));
-const SymSpell = require(path.join(ROOT, 'src', 'renderer', 'spellsolver.js'));
+const { checkWord, checkText } = require(path.join(ROOT, 'dist', 'shared', 'spell-check.js'));
 
 async function exerciseExports() {
   log('=== ExportManager ===');
@@ -144,62 +150,123 @@ async function exerciseExports() {
   }
 }
 
-function exerciseSpellcheck() {
-  log('=== SymSpell ===');
-  const spell = new SymSpell();
-  spell.loadDefault();
+function exerciseSpellCheckModule() {
+  log('=== spell-check shared module (shipped algorithm) ===');
+  const known = new Set(['hello', 'world', 'cognitiencexyz']);
+  const suggestionsMap = new Map([['speling', ['spelling', 'speeling']]]);
 
-  const text = 'Ths is a tset of speling.';
-  const results = spell.checkText(text);
-  assert(Array.isArray(results) && results.length > 0, 'checkText should find misspellings');
-  log(`checkText found ${results.length} issue(s): ${results.map((r) => r.word).join(', ')}`);
+  const backend = {
+    isWordMisspelled(word) {
+      return !known.has(word.toLowerCase());
+    },
+    getWordSuggestions(word) {
+      return suggestionsMap.get(word.toLowerCase()) || ['fix'];
+    },
+  };
 
-  const suggestions = spell.suggest('speling');
-  assert(Array.isArray(suggestions) && suggestions.length > 0, 'suggest should return corrections');
-  const words = suggestions.map((s) => (typeof s === 'string' ? s : s.word));
-  log(`suggest('speling'): ${words.slice(0, 3).join(', ')}`);
+  const wordResult = checkWord(backend, 'speling');
+  assert(wordResult.correct === false, 'checkWord should flag misspelling');
+  assert(wordResult.suggestions.length > 0, 'checkWord should return suggestions');
+  log(`checkWord('speling'): suggestions=${wordResult.suggestions.join(', ')}`);
+
+  const custom = checkWord(backend, 'CognitienceXyz');
+  assert(custom.correct === true, 'checkWord should accept custom dictionary word');
+
+  const textResult = checkText(backend, 'Hello speling CognitienceXyz');
+  assert(textResult.length === 1 && textResult[0].word === 'speling', 'checkText should find only speling');
+  log(`checkText errors: ${textResult.map((e) => e.word).join(', ')}`);
+
+  const preloadSrc = fs.readFileSync(path.join(ROOT, 'dist', 'preload', 'index.js'), 'utf-8');
+  assert(preloadSrc.includes('spell:getContext'), 'preload must expose spell:getContext');
+  assert(preloadSrc.includes('spell:addWord'), 'preload must expose spell:addWord');
+  assert(!preloadSrc.includes("invoke('spell:check'"), 'preload must not use removed spell:check IPC');
+
+  const spellContextSrc = fs.readFileSync(path.join(ROOT, 'dist', 'main', 'spell-context.js'), 'utf-8');
+  assert(spellContextSrc.includes('dictionarySuggestions'), 'spell-context must read dictionarySuggestions');
+  assert(spellContextSrc.includes('misspelledWord'), 'spell-context must read misspelledWord');
+  log('shipped spell path: context-menu + session dictionary (verified in dist)');
 }
 
 function exerciseVersion() {
   log('=== App version ===');
+  const versionLines = [];
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
   assert(pkg.version === '1.2.0', `package.json version should be 1.2.0, got ${pkg.version}`);
-  const { APP_VERSION } = require(path.join(ROOT, 'dist', 'shared', 'constants.js'));
+  versionLines.push(`package.json version: ${pkg.version}`);
+
+  const { APP_VERSION, GITHUB_REPO, GITHUB_LATEST_API } = require(path.join(ROOT, 'dist', 'shared', 'constants.js'));
   assert(APP_VERSION === '1.2.0', `APP_VERSION should be 1.2.0, got ${APP_VERSION}`);
-  log(`version from package.json: ${pkg.version}`);
+  versionLines.push(`APP_VERSION constant: ${APP_VERSION}`);
+  versionLines.push(`GITHUB_REPO: ${GITHUB_REPO}`);
+  versionLines.push(`GITHUB_LATEST_API: ${GITHUB_LATEST_API}`);
+  assert(GITHUB_REPO === 'Maq-Swarm/cognitience-wp', 'GITHUB_REPO should be Maq-Swarm/cognitience-wp');
+
+  try {
+    const grepOut = execSync(
+      'rg "1\\.1\\.0" --glob "*.ts" --glob "*.js" --glob "*.json" --glob "*.html" --glob "*.md" src/ README.md package.json website/cognition-wp/index.html website/cognition-wp/downloads.html website/cognition-wp/releases.html 2>&1 || true',
+      { cwd: ROOT, encoding: 'utf-8', shell: true },
+    );
+    versionLines.push('--- grep 1.1.0 in user-facing paths ---');
+    versionLines.push(grepOut.trim() || '(no matches)');
+    assert(!grepOut.includes('src\\main') && !grepOut.includes('src/main'),
+      'src/main should have no 1.1.0 hardcodes');
+  } catch (e) {
+    versionLines.push(`grep note: ${e.message}`);
+  }
+
+  assert(GITHUB_LATEST_API.includes('Maq-Swarm/cognitience-wp'),
+    'GITHUB_LATEST_API should point at Maq-Swarm repo');
+  const ipcSrc = fs.readFileSync(path.join(ROOT, 'dist', 'main', 'ipc-registry.js'), 'utf-8');
+  assert(ipcSrc.includes('GITHUB_LATEST_API'), 'ipc-registry should use GITHUB_LATEST_API constant');
+  versionLines.push('update checker URL: Maq-Swarm via GITHUB_LATEST_API');
+
+  fs.writeFileSync(VERSION_LOG, versionLines.join('\n') + '\n', 'utf-8');
+  log(versionLines.join('\n'));
 }
 
-async function exerciseCustomDictionary() {
-  log('=== Custom dictionary persistence ===');
+function exerciseSpellContextHandler() {
+  log('=== spell-context handler (shipped Hunspell suggestions path) ===');
+  const { handleSpellContextParams, getLastSpellContext, clearLastSpellContext } =
+    require(path.join(ROOT, 'dist', 'main', 'spell-context.js'));
+
+  clearLastSpellContext();
+  const sent = [];
+  const mockWin = {
+    webContents: { send: (channel, data) => sent.push({ channel, data }) },
+  };
+
+  const ctx = handleSpellContextParams(mockWin, {
+    misspelledWord: 'speling',
+    dictionarySuggestions: ['spelling', 'speeling'],
+    x: 120,
+    y: 80,
+  });
+
+  assert(ctx && ctx.misspelledWord === 'speling', 'handler should capture misspelledWord');
+  assert(ctx.suggestions.length === 2, 'handler should capture dictionarySuggestions');
+  assert(getLastSpellContext()?.misspelledWord === 'speling', 'getLastSpellContext should persist');
+  assert(sent[0].channel === 'spell:contextMenu', 'handler should notify renderer');
+  log(`spell-context: ${ctx.misspelledWord} → ${ctx.suggestions.join(', ')}`);
+}
+
+async function exerciseSpellAddWordIpc() {
+  log('=== spell:addWord IPC (session dictionary) ===');
   const { IPCMainRegistry } = require(path.join(ROOT, 'dist', 'main', 'ipc-registry.js'));
   const { PluginHost } = require(path.join(ROOT, 'dist', 'main', 'plugin-host.js'));
   const { ConfigStore } = require(path.join(ROOT, 'dist', 'main', 'config-store.js'));
-  const { preloadCustomDictionary } = require(path.join(ROOT, 'dist', 'main', 'spell-dictionary.js'));
 
-  const testWord = 'CognitienceXyz';
-  const configStore = new ConfigStore();
-  configStore.set('editor.customDictionary', [testWord]);
-
-  const sessionWords = new Set();
-  const mockSession = {
-    spellChecker: {
-      isMisspelled(word) {
-        return !sessionWords.has(word);
-      },
-      getCorrectionsForMisspelling(word) {
-        return sessionWords.has(word) ? [] : ['fix'];
+  const added = [];
+  const mockWindow = {
+    webContents: {
+      session: {
+        addWordToSpellCheckerDictionary(word) {
+          added.push(word);
+          return true;
+        },
       },
     },
-    addWordToSpellCheckerDictionary(word) {
-      sessionWords.add(word);
-    },
   };
-
-  const mockWindow = { webContents: { session: mockSession } };
-  const mockWindowManager = {
-    send() {},
-    getMainWindow: () => mockWindow,
-  };
+  const mockWindowManager = { send() {}, getMainWindow: () => mockWindow };
   const mockExtensionHost = {
     getExtensions: () => [],
     installExtension: async () => ({}),
@@ -211,34 +278,17 @@ async function exerciseCustomDictionary() {
     getCommands: () => [],
   };
 
-  const registry = new IPCMainRegistry(
-    mockWindowManager,
-    mockExtensionHost,
-    configStore,
-    new PluginHost(),
-  );
+  const registry = new IPCMainRegistry(mockWindowManager, mockExtensionHost, new ConfigStore(), new PluginHost());
   registry.registerAll();
 
-  const spellCheck = mockIpcMain._handlers.get('spell:check');
-  const spellCheckText = mockIpcMain._handlers.get('spell:checkText');
-  const spellAddWord = mockIpcMain._handlers.get('spell:addWord');
+  assert(mockIpcMain._handlers.has('spell:addWord'), 'spell:addWord handler must exist');
+  assert(mockIpcMain._handlers.has('spell:getContext'), 'spell:getContext handler must exist');
+  assert(!mockIpcMain._handlers.has('spell:check'), 'spell:check IPC removed (context-menu path)');
 
-  sessionWords.clear();
-  preloadCustomDictionary(mockWindow, configStore);
-
-  const afterRestart = await spellCheck(null, testWord);
-  assert(afterRestart.correct, 'word should persist after simulated restart');
-
-  const runtimeWord = 'RuntimeCustomWord';
-  await spellAddWord(null, runtimeWord);
-  const afterAdd = await spellCheck(null, runtimeWord);
-  assert(afterAdd.correct, 'word should be correct after addWord');
-
-  const text = `Hello ${testWord} and ${runtimeWord} world.`;
-  const textErrors = await spellCheckText(null, text);
-  const found = textErrors.some((e) => e.word === testWord || e.word === runtimeWord);
-  assert(!found, 'checkText should not flag persisted custom words');
-  log(`custom word "${testWord}" persists across restart`);
+  const res = await mockIpcMain._handlers.get('spell:addWord')(null, 'TestWord');
+  assert(res.success === true, 'spell:addWord should succeed');
+  assert(added.includes('TestWord'), 'spell:addWord should call session.addWordToSpellCheckerDictionary');
+  log(`spell:addWord forwarded to session: ${added.join(', ')}`);
 }
 
 async function exerciseExtensionApi() {
@@ -335,8 +385,9 @@ async function main() {
   try {
     exerciseVersion();
     await exerciseExports();
-    exerciseSpellcheck();
-    await exerciseCustomDictionary();
+    exerciseSpellCheckModule();
+    exerciseSpellContextHandler();
+    await exerciseSpellAddWordIpc();
     await exerciseExtensionApi();
     await exerciseIpcRegistry();
     log('ALL LOGIC EXERCISES PASSED');

@@ -13,6 +13,7 @@ import { ConfigStore } from './config-store';
 import { MenuBuilder } from './menu-builder';
 import { PluginHost } from './plugin-host';
 import { preloadCustomDictionary } from './spell-dictionary';
+import { attachSpellContextMenu } from './spell-context';
 
 let mainWindow: BrowserWindow | null = null;
 let windowManager: WindowManager;
@@ -43,6 +44,9 @@ app.whenReady().then(async () => {
 
   // Pre-load custom dictionary words into Hunspell session
   if (mainWindow) {
+    mainWindow.webContents.session.setSpellCheckerLanguages(['en-US']);
+    mainWindow.webContents.session.setSpellCheckerEnabled(true);
+    attachSpellContextMenu(mainWindow);
     preloadCustomDictionary(mainWindow, configStore);
   }
 

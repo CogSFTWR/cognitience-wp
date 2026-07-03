@@ -6,6 +6,17 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 
+let lastSpellContext: {
+  misspelledWord: string;
+  suggestions: string[];
+  x: number;
+  y: number;
+} | null = null;
+
+ipcRenderer.on('spell:contextMenu', (_event, data) => {
+  lastSpellContext = data;
+});
+
 const cognitionAPI = {
   // ─── Document Operations ────────────────────────────────────
   documents: {
@@ -111,6 +122,7 @@ const cognitionAPI = {
       'toolbar:addButton', 'toolbar:removeButton',
       'notification:info', 'notification:warning', 'notification:error',
       'help:shortcuts', 'help:checkUpdates',
+      'spell:contextMenu',
     ];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (_, ...args) => callback(...args));
@@ -134,11 +146,11 @@ const cognitionAPI = {
     downloadAndInstall: (url: string) => ipcRenderer.invoke('updates:downloadAndInstall', url),
   },
 
-  // ─── Spellcheck (native Hunspell) ──────────────────────────
+  // ─── Spellcheck (native Hunspell via context-menu + session dictionary) ──
   spell: {
-    check: (word: string) => ipcRenderer.invoke('spell:check', word),
+    getContext: () => ipcRenderer.invoke('spell:getContext').then((ctx) => ctx || lastSpellContext),
+    clearContext: () => ipcRenderer.invoke('spell:clearContext'),
     addWord: (word: string) => ipcRenderer.invoke('spell:addWord', word),
-    checkText: (text: string) => ipcRenderer.invoke('spell:checkText', text),
   },
 
   // ─── External Plugin Host (JSON-RPC) ───────────────────────

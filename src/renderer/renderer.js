@@ -147,12 +147,7 @@ function applyConfigToEditor() {
   if (spellStatus) {
     spellStatus.textContent = 'Spell Check: ' + (CognitienceWP.spellCheckEnabled ? 'ON' : 'OFF');
   }
-  // Re-run spellcheck immediately when toggled
-  if (CognitienceWP.spellCheckEnabled) {
-    runSpellCheck();
-  } else {
-    clearSpellCheckHighlights();
-  }
+  // Native spellcheck toggles with contenteditable spellcheck attribute (set above)
 }
 
 function setupConfigListener() {
@@ -190,9 +185,10 @@ function setupEditorEvents() {
     // Ctrl+Shift+P handled globally
   });
 
-  // Context menu on right-click
-  editor.addEventListener('contextmenu', (e) => {
+  // Context menu on right-click (main process captures Hunspell suggestions first)
+  editor.addEventListener('contextmenu', async (e) => {
     e.preventDefault();
+    await new Promise((r) => setTimeout(r, 0));
     showContextMenu(e.clientX, e.clientY);
   });
 
@@ -1705,14 +1701,14 @@ async function showContextMenu(x, y) {
   const sel = window.getSelection().toString();
   const hasSelection = sel.length > 0;
 
-  // Get spellcheck suggestions for the word under the cursor
+  // Hunspell suggestions from Electron context-menu event (main → spell:getContext)
   let spellHtml = '';
   if (CognitienceWP.spellCheckEnabled) {
-    const misspelled = await getMisspelledWordAtPoint(x, y);
+    const misspelled = await getSpellContextAtPoint(x, y);
     if (misspelled && misspelled.suggestions.length > 0) {
       spellHtml = '<div class="context-menu-spell-header">Suggestions</div>';
       for (const s of misspelled.suggestions.slice(0, 5)) {
-        spellHtml += `<div class="context-menu-item spell-suggestion" data-action="spellfix" data-word="${s.word}" data-start="${misspelled.start}" data-end="${misspelled.end}"><span>${s.word}</span></div>`;
+        spellHtml += `<div class="context-menu-item spell-suggestion" data-action="spellfix" data-word="${s}"><span>${s}</span></div>`;
       }
       spellHtml += '<div class="context-menu-separator"></div>';
       spellHtml += `<div class="context-menu-item" data-action="spelladd" data-word="${misspelled.word}"><span>Add "${misspelled.word}" to Dictionary</span></div>`;
@@ -1779,7 +1775,7 @@ async function showContextMenu(x, y) {
         case 'image': executeFormatCommand('insertImage'); break;
         case 'find': toggleFindReplace(); break;
         case 'palette': openCommandPalette(); break;
-        case 'spellfix': applySpellingFix(item.dataset.word, parseInt(item.dataset.start), parseInt(item.dataset.end)); break;
+        case 'spellfix': applySpellingFix(item.dataset.word); break;
         case 'spelladd': addWordToDictionary(item.dataset.word); break;
       }
     });
@@ -2405,192 +2401,31 @@ function insertTemplate(templateKey) {
 // ═══════════════════════════════════════════════════════════
 
 function initSpellChecker() {
-  // Native Hunspell is built into Electron — no JS dictionary needed.
-  // Just run an initial check if spellcheck is enabled.
   console.log('[Cognitience WP] Native Hunspell spellcheck ready');
-  if (CognitienceWP.spellCheckEnabled) {
-    runSpellCheck();
-  }
 }
 
 function scheduleSpellCheck() {
-  if (!CognitienceWP.spellCheckEnabled) return;
-  clearTimeout(CognitienceWP.spellCheckTimer);
-  CognitienceWP.spellCheckTimer = setTimeout(runSpellCheck, CognitienceWP.spellCheckDelay);
+  // Native contenteditable spellcheck handles live underlines.
 }
 
-async function runSpellCheck() {
-  if (!CognitienceWP.spellCheckEnabled) return;
-
-  const editor = CognitienceWP.editor;
-  const text = editor.innerText;
-
-  // Save selection to restore after DOM manipulation
-  const selection = window.getSelection();
-  let savedRange = null;
-  if (selection.rangeCount > 0) {
-    savedRange = selection.getRangeAt(0).cloneRange();
-  }
-
-  // Clear previous highlights
-  clearSpellCheckHighlights();
-
-  // Get misspelled words from native Hunspell via IPC
+async function getSpellContextAtPoint(x, y) {
   try {
-    const errors = await window.cognitience.spell.checkText(text);
-    if (errors && errors.length > 0) {
-      for (const error of errors) {
-        highlightMisspelledWord(error.word, error.start);
-      }
-    }
+    const ctx = await window.cognitience.spell.getContext();
+    if (!ctx || !ctx.misspelledWord) return null;
+    if (Math.abs(ctx.x - x) > 8 || Math.abs(ctx.y - y) > 8) return null;
+    return {
+      word: ctx.misspelledWord,
+      suggestions: ctx.suggestions || [],
+    };
   } catch (e) {
-    console.warn('[Cognitience WP] Spellcheck failed', e);
-  }
-
-  // Restore selection
-  if (savedRange) {
-    selection.removeAllRanges();
-    try {
-      selection.addRange(savedRange);
-    } catch (e) {
-      // Selection might be invalid after DOM changes
-    }
+    return null;
   }
 }
 
-function clearSpellCheckHighlights() {
-  const editor = CognitienceWP.editor;
-  if (!editor) return;
-
-  // Find all misspelled spans and unwrap them
-  const spans = editor.querySelectorAll('span.cog-misspelled');
-  for (const span of spans) {
-    const parent = span.parentNode;
-    while (span.firstChild) {
-      parent.insertBefore(span.firstChild, span);
-    }
-    parent.removeChild(span);
-    parent.normalize(); // Merge adjacent text nodes
-  }
-}
-
-function highlightMisspelledWord(word, textPosition) {
-  const editor = CognitienceWP.editor;
-  if (!editor) return;
-
-  // Walk text nodes to find the word
-  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null);
-  let charCount = 0;
-  let node = null;
-
-  while ((node = walker.nextNode())) {
-    const text = node.textContent;
-    const wordIdx = text.indexOf(word);
-
-    if (wordIdx !== -1 && charCount + wordIdx >= textPosition - 5 && charCount + wordIdx <= textPosition + 5) {
-      // Found the word in this text node
-      try {
-        const range = document.createRange();
-        range.setStart(node, wordIdx);
-        range.setEnd(node, wordIdx + word.length);
-
-        const span = document.createElement('span');
-        span.className = 'cog-misspelled';
-        span.dataset.word = word.toLowerCase();
-        range.surroundContents(span);
-      } catch (e) {
-        // surroundContents can fail if range spans elements — skip silently
-      }
-      return;
-    }
-    charCount += text.length;
-  }
-}
-
-async function getMisspelledWordAtPoint(x, y) {
-  // Find the element at the click point
-  const el = document.elementFromPoint(x, y);
-  if (!el) return null;
-
-  // Check if we clicked on a misspelled word (already highlighted)
-  let target = el;
-  while (target && target !== document.body) {
-    if (target.classList && target.classList.contains('cog-misspelled')) {
-      const word = target.dataset.word || target.textContent || '';
-      // Get suggestions from native Hunspell
-      let suggestions = [];
-      try {
-        const result = await window.cognitience.spell.check(word);
-        suggestions = (result.suggestions || []).map(s => ({ word: s }));
-      } catch (e) {}
-      const editorText = CognitienceWP.editor.innerText;
-      const start = editorText.indexOf(target.textContent);
-      return {
-        word: target.textContent,
-        start: start,
-        end: start + target.textContent.length,
-        suggestions: suggestions,
-      };
-    }
-    target = target.parentElement;
-  }
-
-  // Also check: is the word at cursor position misspelled?
-  const sel = window.getSelection();
-  if (sel.rangeCount > 0) {
-    const range = sel.getRangeAt(0);
-    const container = range.startContainer;
-    if (container.nodeType === Node.TEXT_NODE) {
-      const text = container.textContent;
-      const offset = range.startOffset;
-      const before = text.substring(0, offset);
-      const after = text.substring(offset);
-      const wordMatch = (before.match(/([a-zA-Z']+)$/) || [''])[0] + (after.match(/^([a-zA-Z']+)/) || [''])[0];
-      if (wordMatch.length > 1) {
-        let isMisspelled = false;
-        let suggestions = [];
-        try {
-          const result = await window.cognitience.spell.check(wordMatch.toLowerCase());
-          isMisspelled = !result.correct;
-          suggestions = (result.suggestions || []).map(s => ({ word: s }));
-        } catch (e) {}
-        if (isMisspelled) {
-          const fullText = CognitienceWP.editor.innerText;
-          const start = fullText.indexOf(wordMatch);
-          return {
-            word: wordMatch,
-            start: start,
-            end: start + wordMatch.length,
-            suggestions: suggestions,
-          };
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-function applySpellingFix(newWord, start, end) {
-  const editor = CognitienceWP.editor;
-  const text = editor.innerText;
-
-  // Find the misspelled span and replace its text
-  const spans = editor.querySelectorAll('span.cog-misspelled');
-  for (const s of spans) {
-    const wordText = s.textContent;
-    const idx = text.indexOf(wordText);
-    if (idx === start || Math.abs(idx - start) <= 5) {
-      s.textContent = newWord;
-      s.classList.remove('cog-misspelled');
-      markDirty();
-      setTimeout(runSpellCheck, 100);
-      return;
-    }
-  }
-
+function applySpellingFix(newWord) {
+  document.execCommand('insertText', false, newWord);
+  markDirty();
   showNotification('info', 'Spell Check', `Applied: ${newWord}`);
-  setTimeout(runSpellCheck, 100);
 }
 
 async function addWordToDictionary(word) {
@@ -2614,7 +2449,7 @@ async function addWordToDictionary(word) {
   }
 
   showNotification('success', 'Dictionary', `Added "${word}" to dictionary`);
-  runSpellCheck();
+  window.cognitience.spell.clearContext();
 }
 
 // ═══════════════════════════════════════════════════════════
