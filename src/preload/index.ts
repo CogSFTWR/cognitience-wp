@@ -175,6 +175,8 @@ const cognitionAPI = {
       return ipcRenderer.invoke('spell:clearContext');
     },
     addWord: (word: string) => ipcRenderer.invoke('spell:addWord', word),
+    setSessionEnabled: (enabled: boolean) =>
+      ipcRenderer.invoke('spell:setSessionEnabled', enabled),
   },
 
   // ─── External Plugin Host (JSON-RPC) ───────────────────────

@@ -20,4 +20,11 @@ export function registerSpellIpcHandlers(windowManager: WindowManager): void {
     win.webContents.session.addWordToSpellCheckerDictionary(word);
     return { success: true };
   });
+
+  ipcMain.handle('spell:setSessionEnabled', async (_, enabled: boolean) => {
+    const win = windowManager.getMainWindow();
+    if (!win) return { success: false };
+    win.webContents.session.setSpellCheckerEnabled(!!enabled);
+    return { success: true };
+  });
 }

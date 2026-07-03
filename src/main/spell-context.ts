@@ -41,6 +41,14 @@ export function handleSpellContextParams(
 }
 
 export function attachSpellContextMenu(window: BrowserWindow): void {
+  // Session spellcheck must be on before Chromium builds context-menu params (right-click).
+  window.webContents.on('before-input-event', (_event, input) => {
+    const mouse = input as Electron.Input & { button?: string };
+    if (mouse.type === 'mouseDown' && mouse.button === 'right') {
+      window.webContents.session.setSpellCheckerEnabled(true);
+    }
+  });
+
   window.webContents.on('context-menu', (_event, params) => {
     handleSpellContextParams(window, params);
   });

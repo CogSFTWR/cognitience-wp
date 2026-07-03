@@ -32,8 +32,61 @@ function distanceToRange(caretRange, wordRange) {
   return Math.min(before.toString().length, after.toString().length);
 }
 
-function findMisspelledRange(rootEl, misspelledWord, selection) {
-  if (!rootEl || !misspelledWord || !selection) return null;
+function expandTextRangeToWord(textNode, offset, misspelledWord) {
+  const text = textNode.textContent || '';
+  const idx = text.indexOf(misspelledWord, Math.max(0, offset - misspelledWord.length));
+  if (idx === -1) return null;
+  const end = idx + misspelledWord.length;
+  if (offset < idx || offset > end) return null;
+  const range = document.createRange();
+  range.setStart(textNode, idx);
+  range.setEnd(textNode, end);
+  return range;
+}
+
+function findRangeAtPoint(rootEl, misspelledWord, x, y) {
+  if (x == null || y == null || !rootEl) return null;
+
+  let probe = null;
+  if (typeof document.caretRangeFromPoint === 'function') {
+    probe = document.caretRangeFromPoint(x, y);
+  } else if (typeof document.caretPositionFromPoint === 'function') {
+    const pos = document.caretPositionFromPoint(x, y);
+    if (pos && pos.offsetNode) {
+      probe = document.createRange();
+      probe.setStart(pos.offsetNode, pos.offset);
+      probe.collapse(true);
+    }
+  }
+  if (!probe || !rootEl.contains(probe.startContainer)) return null;
+
+  const node = probe.startContainer;
+  if (node.nodeType !== Node.TEXT_NODE) return null;
+  return expandTextRangeToWord(node, probe.startOffset, misspelledWord);
+}
+
+function findMisspelledRange(rootEl, misspelledWord, selection, options) {
+  if (!rootEl || !misspelledWord) return null;
+
+  if (options && options.range) {
+    const stored = options.range.cloneRange();
+    if (stored.toString() === misspelledWord) return stored;
+    if (stored.collapsed && stored.startContainer.nodeType === Node.TEXT_NODE) {
+      const expanded = expandTextRangeToWord(
+        stored.startContainer,
+        stored.startOffset,
+        misspelledWord,
+      );
+      if (expanded) return expanded;
+    }
+  }
+
+  if (options && options.x != null && options.y != null) {
+    const atPoint = findRangeAtPoint(rootEl, misspelledWord, options.x, options.y);
+    if (atPoint) return atPoint;
+  }
+
+  if (!selection) return null;
 
   if (selection.toString() === misspelledWord && selection.rangeCount > 0) {
     return selection.getRangeAt(0).cloneRange();
@@ -66,35 +119,49 @@ function findMisspelledRange(rootEl, misspelledWord, selection) {
   return best;
 }
 
-function replaceMisspelledWord(rootEl, misspelledWord, correction) {
+function collapseCaretAfter(range) {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const caret = range.cloneRange();
+  caret.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(caret);
+}
+
+function replaceMisspelledWord(rootEl, misspelledWord, correction, options) {
   if (!rootEl || !misspelledWord || !correction) return false;
 
   const selection = window.getSelection();
-  if (!selection) return false;
-
-  const range = findMisspelledRange(rootEl, misspelledWord, selection);
+  const range = findMisspelledRange(rootEl, misspelledWord, selection, options);
   if (!range) return false;
 
   selection.removeAllRanges();
   selection.addRange(range);
+
   let replaced = false;
   if (typeof document.execCommand === 'function') {
     replaced = document.execCommand('insertText', false, correction);
   }
   if (!replaced) {
     range.deleteContents();
-    range.insertNode(document.createTextNode(correction));
-    range.collapse(false);
+    const textNode = document.createTextNode(correction);
+    range.insertNode(textNode);
+    const after = document.createRange();
+    after.setStart(textNode, correction.length);
+    after.collapse(true);
     selection.removeAllRanges();
-    selection.addRange(range);
+    selection.addRange(after);
+    return true;
   }
+
+  collapseCaretAfter(selection.getRangeAt(0));
   return true;
 }
 
 if (typeof window !== 'undefined') {
-  window.SpellReplace = { replaceMisspelledWord, findMisspelledRange };
+  window.SpellReplace = { replaceMisspelledWord, findMisspelledRange, findRangeAtPoint };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { replaceMisspelledWord, findMisspelledRange };
+  module.exports = { replaceMisspelledWord, findMisspelledRange, findRangeAtPoint };
 }

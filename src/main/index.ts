@@ -48,7 +48,8 @@ app.whenReady().then(async () => {
   // Pre-load custom dictionary words into Hunspell session
   if (mainWindow) {
     mainWindow.webContents.session.setSpellCheckerLanguages(['en-US']);
-    mainWindow.webContents.session.setSpellCheckerEnabled(true);
+    // Start disabled; renderer re-enables at word boundaries. Right-click enabled in spell-context.
+    mainWindow.webContents.session.setSpellCheckerEnabled(false);
     attachSpellContextMenu(mainWindow);
     preloadCustomDictionary(mainWindow, configStore);
   }
