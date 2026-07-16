@@ -1,7 +1,5 @@
 node_modules/
 dist/
-node_modules/
-dist/
 release/
 release2/
 release3/
@@ -15,3 +13,11 @@ coverage/
 .idea/
 .vscode/settings.json
 website/
+.asar-check/
+.asar-check-new/
+.test-exports/
+.test-spell/
+.test-userdata/
+sketches/
+mcps/
+terminals/

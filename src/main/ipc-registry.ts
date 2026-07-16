@@ -16,6 +16,42 @@ import { PluginHost } from './plugin-host';
 import { BUILTIN_THEMES, GITHUB_LATEST_API, GITHUB_RELEASES_URL } from '../shared/constants';
 import { registerSpellIpcHandlers } from './spell-ipc';
 
+function compareVersions(a: string, b: string): number {
+  const pa = a.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = b.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const da = pa[i] || 0;
+    const db = pb[i] || 0;
+    if (da !== db) return da < db ? -1 : 1;
+  }
+  return 0;
+}
+
+function resolveAllowedFsPath(filePath: string): string {
+  const resolved = path.resolve(filePath);
+  const allowedRoots = [app.getPath('userData'), app.getPath('temp')];
+  const isAllowed = allowedRoots.some((root) => {
+    const rel = path.relative(root, resolved);
+    return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+  });
+  if (!isAllowed) {
+    throw new Error('Access denied: path outside allowed directories');
+  }
+  return resolved;
+}
+
+function pickPlatformAsset(assets: Array<{ name: string; browser_download_url: string }> | undefined) {
+  if (!assets?.length) return null;
+  if (process.platform === 'win32') {
+    return assets.find((a) => a.name.endsWith('.exe')) ?? null;
+  }
+  if (process.platform === 'darwin') {
+    return assets.find((a) => a.name.endsWith('.dmg') || a.name.endsWith('.zip')) ?? null;
+  }
+  return assets.find((a) => a.name.endsWith('.tar.gz') || a.name.endsWith('.AppImage')) ?? null;
+}
+
 export class IPCMainRegistry {
   private exportManager: ExportManager;
 
@@ -172,10 +208,15 @@ export class IPCMainRegistry {
     });
 
     ipcMain.handle('doc:save', async (_, docData: { content: string; filePath: string; format: string; title: string }) => {
-      let content = docData.content;
-
-      if (docData.filePath.endsWith('.cog')) {
-        content = this.exportManager.buildCogJson(docData.content, docData.title || 'Untitled', docData.filePath);
+      let content: string;
+      try {
+        content = this.exportManager.serializeContent(
+          docData.content,
+          docData.title || 'Untitled',
+          docData.filePath,
+        );
+      } catch (err) {
+        throw new Error(err instanceof Error ? err.message : String(err));
       }
 
       fs.writeFileSync(docData.filePath, content, 'utf-8');
@@ -199,10 +240,15 @@ export class IPCMainRegistry {
 
       if (result.canceled || !result.filePath) return null;
 
-      let content = docData.content;
-      if (result.filePath.endsWith('.cog')) {
-        // New file — no existing path to read metadata from
-        content = this.exportManager.buildCogJson(docData.content, docData.title || 'Untitled', result.filePath);
+      let content: string;
+      try {
+        content = this.exportManager.serializeContent(
+          docData.content,
+          docData.title || 'Untitled',
+          result.filePath,
+        );
+      } catch (err) {
+        throw new Error(err instanceof Error ? err.message : String(err));
       }
 
       fs.writeFileSync(result.filePath, content, 'utf-8');
@@ -314,14 +360,16 @@ export class IPCMainRegistry {
   private registerFileHandlers() {
     ipcMain.handle('fs:read', async (_, filePath: string) => {
       try {
-        return fs.readFileSync(filePath, 'utf-8');
+        const resolved = resolveAllowedFsPath(filePath);
+        return fs.readFileSync(resolved, 'utf-8');
       } catch (err) {
         throw new Error(`Failed to read file: ${err}`);
       }
     });
 
     ipcMain.handle('fs:write', async (_, filePath: string, content: string) => {
-      fs.writeFileSync(filePath, content, 'utf-8');
+      const resolved = resolveAllowedFsPath(filePath);
+      fs.writeFileSync(resolved, content, 'utf-8');
       return { success: true };
     });
 
@@ -330,7 +378,8 @@ export class IPCMainRegistry {
     });
 
     ipcMain.handle('fs:mkdir', async (_, dirPath: string) => {
-      fs.mkdirSync(dirPath, { recursive: true });
+      const resolved = resolveAllowedFsPath(dirPath);
+      fs.mkdirSync(resolved, { recursive: true });
       return { success: true };
     });
 
@@ -370,6 +419,10 @@ export class IPCMainRegistry {
       this.windowManager.getMainWindow()?.close();
     });
 
+    ipcMain.handle('win:confirmClose', async () => {
+      this.windowManager.forceClose();
+    });
+
     ipcMain.handle('win:fullscreen', async () => {
       const win = this.windowManager.getMainWindow();
       if (win) {
@@ -402,15 +455,19 @@ export class IPCMainRegistry {
 
         const release = JSON.parse(data);
         const latestVersion = release.tag_name?.replace(/^v/, '') || '';
-        const downloadUrl = release.assets?.find((a: any) =>
-          a.name.endsWith('.exe') || a.name.endsWith('Setup.exe')
-        )?.browser_download_url || release.html_url;
+        const platformAsset = pickPlatformAsset(release.assets);
+        const downloadUrl = platformAsset?.browser_download_url
+          || release.assets?.[0]?.browser_download_url
+          || release.html_url;
 
         const currentVersion = app.getVersion();
+        const updateAvailable = Boolean(
+          latestVersion && compareVersions(latestVersion, currentVersion) > 0,
+        );
         return {
           currentVersion,
           latestVersion,
-          updateAvailable: latestVersion && latestVersion !== currentVersion,
+          updateAvailable,
           downloadUrl,
           releaseNotes: release.body || '',
           releaseUrl: release.html_url || GITHUB_RELEASES_URL,

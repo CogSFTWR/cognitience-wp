@@ -111,6 +111,61 @@ export class ExportManager {
     return this.buildCogMarkdown(htmlContent, title, existingFilePath);
   }
 
+  /** Serialize editor HTML to the on-disk format implied by filePath extension. */
+  serializeContent(htmlContent: string, title: string, filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    switch (ext) {
+      case '.cog':
+        return this.buildCogMarkdown(htmlContent, title, filePath);
+      case '.md':
+      case '.markdown':
+        return this.htmlToMarkdown(htmlContent);
+      case '.txt':
+        return this.htmlToText(htmlContent);
+      case '.html':
+      case '.htm':
+        return this.buildStandaloneHtml(htmlContent, title);
+      default:
+        throw new Error(
+          `Unsupported save format "${ext}". Use Export for PDF, DOCX, and DOC.`,
+        );
+    }
+  }
+
+  buildStandaloneHtml(htmlContent: string, title: string): string {
+    const safeTitle = (title || 'Untitled')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${safeTitle}</title>
+<style>
+body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; max-width: 720px; margin: 40px auto; padding: 20px; line-height: 1.6; font-size: 16px; color: #1e1e2e; }
+h1 { font-size: 2em; } h2 { font-size: 1.5em; } h3 { font-size: 1.25em; }
+h1, h2, h3, h4, h5, h6 { font-weight: 700; margin: 1em 0 0.3em; }
+p { margin: 0 0 1em; }
+blockquote { border-left: 3px solid #89b4fa; margin: 1em 0; padding: 0.5em 1em; background: #f5f5f5; }
+pre { background: #f5f5f5; padding: 12px 16px; border-radius: 8px; overflow-x: auto; }
+code { font-family: 'Consolas', monospace; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; }
+th { background: #f5f5f5; font-weight: 700; }
+img { max-width: 100%; height: auto; border-radius: 8px; }
+a { color: #6c5ce7; }
+ul, ol { margin: 0 0 1em; padding-left: 2em; }
+hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+</style>
+</head>
+<body>
+${htmlContent}
+</body>
+</html>`;
+  }
+
   buildCogMarkdown(htmlContent: string, title: string, existingFilePath?: string): string {
     const stats = this.computeStats(htmlContent);
     const now = new Date();
@@ -388,34 +443,7 @@ export class ExportManager {
   // ─── HTML ───────────────────────────────────────────────
 
   private exportHtml(filePath: string, htmlContent: string, title: string) {
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title || 'Untitled'}</title>
-<style>
-body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; max-width: 720px; margin: 40px auto; padding: 20px; line-height: 1.6; font-size: 16px; color: #1e1e2e; }
-h1 { font-size: 2em; } h2 { font-size: 1.5em; } h3 { font-size: 1.25em; }
-h1, h2, h3, h4, h5, h6 { font-weight: 700; margin: 1em 0 0.3em; }
-p { margin: 0 0 1em; }
-blockquote { border-left: 3px solid #89b4fa; margin: 1em 0; padding: 0.5em 1em; background: #f5f5f5; }
-pre { background: #f5f5f5; padding: 12px 16px; border-radius: 8px; overflow-x: auto; }
-code { font-family: 'Consolas', monospace; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; }
-table { width: 100%; border-collapse: collapse; }
-th, td { border: 1px solid #ddd; padding: 8px 12px; }
-th { background: #f5f5f5; font-weight: 700; }
-img { max-width: 100%; height: auto; border-radius: 8px; }
-a { color: #6c5ce7; }
-ul, ol { margin: 0 0 1em; padding-left: 2em; }
-hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
-</style>
-</head>
-<body>
-${htmlContent}
-</body>
-</html>`;
-    fs.writeFileSync(filePath, html, 'utf-8');
+    fs.writeFileSync(filePath, this.buildStandaloneHtml(htmlContent, title), 'utf-8');
   }
 
   // ─── PDF (via hidden BrowserWindow + printToPDF) ─────────

@@ -22,7 +22,7 @@ const cognitionAPI = {
   documents: {
     new: () => ipcRenderer.invoke('doc:new'),
     open: (filePath?: string) => ipcRenderer.invoke('doc:open', filePath),
-    save: (data: { content: string; filePath: string; format: string }) =>
+    save: (data: { content: string; filePath: string; format: string; title: string }) =>
       ipcRenderer.invoke('doc:save', data),
     saveAs: (data: { content: string; format: string; title: string }) =>
       ipcRenderer.invoke('doc:saveAs', data),
@@ -95,7 +95,11 @@ const cognitionAPI = {
     minimize: () => ipcRenderer.invoke('win:minimize'),
     maximize: () => ipcRenderer.invoke('win:maximize'),
     close: () => ipcRenderer.invoke('win:close'),
+    confirmClose: () => ipcRenderer.invoke('win:confirmClose'),
     fullscreen: () => ipcRenderer.invoke('win:fullscreen'),
+    onBeforeClose: (callback: () => void) => {
+      ipcRenderer.on('win:beforeClose', () => callback());
+    },
   },
 
   // ─── Event Listeners ──────────────────────────────────────
@@ -146,7 +150,7 @@ const cognitionAPI = {
     downloadAndInstall: (url: string) => ipcRenderer.invoke('updates:downloadAndInstall', url),
   },
 
-  // ─── Spellcheck (native Hunspell via context-menu + session dictionary) ──
+  // ─── Spellcheck (manual SymSpell underlines in renderer) ──
   spell: {
     getContext: () => {
       if (lastSpellContext) return Promise.resolve(lastSpellContext);

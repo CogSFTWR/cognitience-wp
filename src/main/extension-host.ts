@@ -29,6 +29,15 @@ export class ExtensionHost {
     }
   }
 
+  private static resolveExtensionPath(installPath: string, filePath: string): string {
+    const resolved = path.resolve(installPath, filePath);
+    const rel = path.relative(installPath, resolved);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new Error('Access denied: path escapes extension directory');
+    }
+    return resolved;
+  }
+
   async initialize() {
     this.discoverExtensions();
     this.registerIPC();
@@ -303,22 +312,22 @@ export class ExtensionHost {
         },
       },
 
-      // File system access (sandboxed to extension directory and user files)
+      // File system access (jailed to extension install directory)
       fs: {
         readFileSync(filePath: string): string {
-          const resolved = path.resolve(ext.installPath, filePath);
+          const resolved = ExtensionHost.resolveExtensionPath(ext.installPath, filePath);
           return fs.readFileSync(resolved, 'utf-8');
         },
         writeFileSync(filePath: string, content: string): void {
-          const resolved = path.resolve(ext.installPath, filePath);
+          const resolved = ExtensionHost.resolveExtensionPath(ext.installPath, filePath);
           fs.writeFileSync(resolved, content, 'utf-8');
         },
         existsSync(filePath: string): boolean {
-          const resolved = path.resolve(ext.installPath, filePath);
+          const resolved = ExtensionHost.resolveExtensionPath(ext.installPath, filePath);
           return fs.existsSync(resolved);
         },
         readDirSync(dirPath: string): string[] {
-          const resolved = path.resolve(ext.installPath, dirPath);
+          const resolved = ExtensionHost.resolveExtensionPath(ext.installPath, dirPath);
           return fs.readdirSync(resolved);
         },
       },

@@ -21,6 +21,7 @@ interface WindowState {
 export class WindowManager {
   private windows = new Map<number, BrowserWindow>();
   private windowState: WindowState | null = null;
+  private allowClose = false;
 
   constructor(
     private configStore: ConfigStore,
@@ -76,6 +77,7 @@ export class WindowManager {
 
     // Track window state
     this.trackWindowState(window);
+    this.setupCloseConfirmation(window);
 
     // Store window reference
     this.windows.set(window.id, window);
@@ -139,5 +141,20 @@ export class WindowManager {
     if (window) {
       window.webContents.send(channel, ...args);
     }
+  }
+
+  private setupCloseConfirmation(window: BrowserWindow) {
+    window.on('close', (e) => {
+      if (this.allowClose) return;
+      e.preventDefault();
+      window.webContents.send('win:beforeClose');
+    });
+  }
+
+  forceClose() {
+    const win = this.getMainWindow();
+    if (!win) return;
+    this.allowClose = true;
+    win.close();
   }
 }

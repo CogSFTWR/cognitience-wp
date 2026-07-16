@@ -53,7 +53,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   'extensions.autoUpdate': true,
   'extensions.ignoreRecommendations': false,
   'extensions.allowUntrusted': false,
-  'extensions.galleryEnabled': true,
+  'extensions.galleryEnabled': false,
   'extensions.galleryUrl': 'https://registry.cognitiencewp.org/api',
 
   'updates.autoCheck': true,

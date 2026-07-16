@@ -13,17 +13,58 @@ import { ConfigStore } from './config-store';
 import { MenuBuilder } from './menu-builder';
 import { PluginHost } from './plugin-host';
 
+const SUPPORTED_OPEN_EXTENSIONS = ['.cog', '.md', '.txt', '.doc', '.docx', '.pdf', '.html', '.htm'];
 
 let mainWindow: BrowserWindow | null = null;
 let windowManager: WindowManager;
 let extensionHost: ExtensionHost;
 let pluginHost: PluginHost | null = null;
 let configStore: ConfigStore;
+const pendingOpenFiles: string[] = [];
+
+function isSupportedDocumentPath(filePath: string): boolean {
+  if (!path.isAbsolute(filePath)) return false;
+  const ext = path.extname(filePath).toLowerCase();
+  return SUPPORTED_OPEN_EXTENSIONS.includes(ext);
+}
+
+function extractDocumentPath(argv: string[]): string | undefined {
+  return argv.find((arg) => !arg.startsWith('-') && isSupportedDocumentPath(arg));
+}
+
+function queueOrOpenFile(filePath: string) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    windowManager.openFile(filePath);
+  } else {
+    pendingOpenFiles.push(filePath);
+  }
+}
+
+function flushPendingOpenFiles() {
+  while (pendingOpenFiles.length > 0) {
+    const filePath = pendingOpenFiles.shift();
+    if (filePath) {
+      windowManager.openFile(filePath);
+    }
+  }
+}
 
 // Prevent multiple instances
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const filePath = extractDocumentPath(argv);
+    const win = windowManager?.getMainWindow();
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+      if (filePath) queueOrOpenFile(filePath);
+    } else if (filePath) {
+      pendingOpenFiles.push(filePath);
+    }
+  });
 }
 
 app.whenReady().then(async () => {
@@ -56,11 +97,12 @@ app.whenReady().then(async () => {
   // Activate startup extensions
   await extensionHost.activateByEvent('onStartup');
 
-  // Handle file open from OS
-  const openFile = process.argv.find(arg => !arg.startsWith('-') && path.isAbsolute(arg) && (arg.endsWith('.cog') || arg.endsWith('.md') || arg.endsWith('.txt') || arg.endsWith('.doc') || arg.endsWith('.docx') || arg.endsWith('.pdf') || arg.endsWith('.html')));
-  if (openFile && mainWindow) {
-    windowManager.openFile(openFile);
+  // Handle file open from OS (argv or queued open-file events)
+  const openFile = extractDocumentPath(process.argv);
+  if (openFile) {
+    queueOrOpenFile(openFile);
   }
+  flushPendingOpenFiles();
 
   console.log('[Cognitience WP] Application started successfully');
 });
@@ -79,22 +121,27 @@ app.on('before-quit', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     mainWindow = windowManager.createMainWindow();
+    flushPendingOpenFiles();
   }
 });
 
 // Handle file open events (macOS)
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
-  if (mainWindow) {
-    windowManager.openFile(filePath);
+  if (isSupportedDocumentPath(filePath)) {
+    queueOrOpenFile(filePath);
   }
 });
 
 // Security: prevent navigation to external content
 app.on('web-contents-created', (event, contents) => {
   contents.on('will-navigate', (event, navigationUrl) => {
-    const parsedUrl = new URL(navigationUrl);
-    if (!parsedUrl.origin.startsWith('file://')) {
+    try {
+      const parsedUrl = new URL(navigationUrl);
+      if (parsedUrl.protocol !== 'file:') {
+        event.preventDefault();
+      }
+    } catch {
       event.preventDefault();
     }
   });

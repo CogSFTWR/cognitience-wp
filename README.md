@@ -9,8 +9,10 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 ## Download & Install
 
 Download from the [releases page](https://github.com/Maq-Swarm/cognitience-wp/releases):
-- `Cognitience WP Setup 1.2.2.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
-- `Cognitience-WP-Portable-1.2.2.exe` — Single portable EXE (no install needed, just run)
+
+- **Windows:** `Cognitience WP Setup 1.3.0.exe` (NSIS installer) or `Cognitience-WP-Portable-1.3.0.exe` (portable)
+- **macOS:** `.dmg` or `.zip` from the latest release
+- **Linux:** `.tar.gz` archive from the latest release
 
 ## Features
 
@@ -24,7 +26,7 @@ Download from the [releases page](https://github.com/Maq-Swarm/cognitience-wp/re
 - Text and background color selection
 - Font size control
 - Paragraph alignment (left, center, right, justify)
-- Spell check (native Hunspell, offline, custom dictionary persists across restarts), auto-save, find and replace
+- Spell check (manual SymSpell underlines on demand; custom dictionary persists across restarts), auto-save, find and replace
 
 ### Document Templates
 - **arXiv Research Paper** — Academic paper format with two-column layout, abstract, sections, equations, tables, and references
@@ -47,16 +49,16 @@ Access via Insert → Templates, or the Command Palette.
 - VS Code-inspired layout: activity bar, sidebar, editor area, status bar
 - Command palette (Ctrl+Shift+P) with 60+ commands
 - 4 themes: Dark, Light, Sepia, High Contrast
-- Focus mode for distraction-free writing
+- Focus mode for distraction-free writing (Escape to exit)
 - Document outline (auto-generated from headings)
 - Context menu, notification system
-- Custom title bar with window controls
+- Custom title bar with window controls (Windows/Linux; native traffic lights on macOS)
 - Status bar (word count, reading time, cursor position, theme, spellcheck)
 - In-app settings with Updates, Templates, and Plugin Development panels
 
 ### Auto-Update
-- Check for updates from GitHub Releases directly in Settings
-- One-click download and install
+- Check for updates from GitHub Releases in Settings
+- Opens the release/download page in your browser (no silent in-app install)
 
 ### Extension System (VS Code-style)
 - `package.json` manifest with `contributes`
@@ -67,6 +69,7 @@ Access via Insert → Templates, or the Command Palette.
 - **SVG toolbar buttons** — plugins can add buttons to the toolbar with SVG icons
 - **Plugin scaffold wizard** — Help → Developer: Create New Plugin auto-generates the boilerplate
 - Plugin documentation built into the Settings panel
+- Extension gallery is not shipped yet (`galleryEnabled` defaults to off)
 
 ### Plugin Compatibility (External Tools)
 - JSON-RPC 2.0 over stdio protocol
@@ -87,6 +90,7 @@ Access via Insert → Templates, or the Command Palette.
 | Ctrl+F | Find |
 | Ctrl+H | Replace |
 | Ctrl+B | Bold |
+| Ctrl+Shift+B | Toggle Sidebar |
 | Ctrl+I | Italic |
 | Ctrl+U | Underline |
 | Ctrl+K | Insert Link |
@@ -104,6 +108,8 @@ npm install
 npm run build
 npm start          # Run in dev
 npm run package:win  # Build installer + portable EXE (Windows)
+npm run package:mac  # Build dmg + zip (macOS)
+npm run package:linux  # Build tar.gz (Linux)
 ```
 
 ## Creating an Extension
@@ -123,10 +129,18 @@ Or manually:
 
 ## Architecture
 
-- **Main Process**: WindowManager, MenuBuilder, IPCRegistry, ExtensionHost, PluginHost, ExportManager, ConfigStore, UpdateChecker
-- **Preload**: Secure contextBridge (contextIsolation, no nodeIntegration, sandboxed)
+- **Main Process**: WindowManager, MenuBuilder, IPCRegistry, ExtensionHost, PluginHost, ExportManager, ConfigStore
+- **Preload**: Secure contextBridge (contextIsolation, no nodeIntegration)
 - **Renderer**: HTML/CSS/JS editor with full formatting toolbar, templates, spellcheck
+- **Updates**: GitHub Releases check via IPC (`updates:check` / `updates:downloadAndInstall`)
 - **Declared runtime dependencies** — `js-yaml` (.cog), `jszip`/`jsdom` (docx export), `adm-zip` (.cogwp install), `marked`/`mammoth` (import); config stored as plain JSON
+
+## Known Limitations
+
+- Editor formatting uses `document.execCommand` (legacy Chromium API)
+- Binary `.doc` and PDF import quality is limited; PDFs may open in the system viewer
+- Extensions run in the main process with Node access (install only from trusted sources)
+- Extension gallery / registry is not available yet
 
 ## License
 

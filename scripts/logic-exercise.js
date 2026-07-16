@@ -216,12 +216,12 @@ function exerciseVersion() {
   log('=== App version ===');
   const versionLines = [];
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
-  assert(pkg.version === '1.2.2', `package.json version should be 1.2.2, got ${pkg.version}`);
+  assert(pkg.version === '1.3.0', `package.json version should be 1.3.0, got ${pkg.version}`);
   versionLines.push(`package.json version: ${pkg.version}`);
 
   const { APP_VERSION, APP_PUBLISHER, GITHUB_REPO, GITHUB_LATEST_API } =
     require(path.join(ROOT, 'dist', 'shared', 'constants.js'));
-  assert(APP_VERSION === '1.2.2', `APP_VERSION should be 1.2.2, got ${APP_VERSION}`);
+  assert(APP_VERSION === '1.3.0', `APP_VERSION should be 1.3.0, got ${APP_VERSION}`);
   assert(APP_PUBLISHER === 'Maq-Swarm', `APP_PUBLISHER should be Maq-Swarm, got ${APP_PUBLISHER}`);
   assert(pkg.author === 'Maq-Swarm', `package.json author should be Maq-Swarm, got ${pkg.author}`);
   assert(pkg.build && pkg.build.appId === 'com.maqswarm.cognitiencewp',
@@ -369,7 +369,7 @@ function exerciseBuiltAppId() {
     const built = JSON.parse(fs.readFileSync(path.join(extractDir, 'package.json'), 'utf-8'));
     const builtJson = JSON.stringify(built);
     assert(!builtJson.includes('wailonbrowngh'), 'built package.json must not contain wailonbrowngh');
-    assert(built.version === '1.2.2', `built version should be 1.2.2, got ${built.version}`);
+    assert(built.version === '1.3.0', `built version should be 1.3.0, got ${built.version}`);
     assert(built.author === 'Maq-Swarm', `built author should be Maq-Swarm, got ${built.author}`);
     assert(built.cognitienceAppId === 'com.maqswarm.cognitiencewp',
       `asar cognitienceAppId should be com.maqswarm.cognitiencewp, got ${built.cognitienceAppId}`);

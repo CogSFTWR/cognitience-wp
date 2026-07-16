@@ -276,6 +276,7 @@
 }
 
 /* ── Focus Mode ─────────────────────────────────────────── */
+body.focus-mode #title-bar,
 body.focus-mode #sidebar,
 body.focus-mode #editor-toolbar,
 body.focus-mode #status-bar,
@@ -284,7 +285,7 @@ body.focus-mode #right-panel {
 }
 
 body.focus-mode #main-container {
-  height: calc(100vh - 36px);
+  height: 100vh;
 }
 
 body.focus-mode #editor-page {

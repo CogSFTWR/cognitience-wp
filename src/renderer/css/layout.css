@@ -130,6 +130,42 @@ html, body {
   color: #ffffff;
 }
 
+.platform-darwin .window-controls {
+  display: none;
+}
+
+.template-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-panel);
+  transition: background 0.15s;
+}
+
+.template-card:hover {
+  background: var(--bg-active);
+}
+
+.template-card-icon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.template-card-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.template-card-desc {
+  font-size: 11px;
+  color: var(--fg-tab);
+  margin-top: 2px;
+}
+
 /* ── Main Container ────────────────────────────────────── */
 #main-container {
   display: flex;
@@ -188,7 +224,7 @@ html, body {
   border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap;
   min-height: 40px;
-  height: 40px;
+  height: auto;
 }
 
 .toolbar-group {

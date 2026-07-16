@@ -137,7 +137,7 @@ export class MenuBuilder {
         submenu: [
           {
             label: 'Toggle Sidebar',
-            accelerator: 'CmdOrCtrl+B',
+            accelerator: 'CmdOrCtrl+Shift+B',
             click: () => this.windowManager.send('view:toggleSidebar'),
           },
           {
