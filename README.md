@@ -1,147 +1,86 @@
-# Cognitience WP
+# Cognition WP
 
-**The VS Code of word processors.**
+Local-first word processor with an Apple-inspired liquid-glass UI and a **Rust** backend.
 
-An open-source, extensible word processor built on Electron and TypeScript. Cognitience WP brings the power and flexibility of VS Code's extension ecosystem to the world of document editing.
+Nothing is uploaded to the cloud. Documents are JSON files on disk.
 
-![Cognitience WP](resources/logo.png)
+## Requirements
 
-## Download & Install
+- Rust 1.75+ (`cargo`)
+- A modern browser (Chrome, Edge, Firefox, Safari)
 
-Download from the [releases page](https://github.com/Maq-Swarm/cognitience-wp/releases):
+## Desktop app (Electron)
 
-- **Windows:** `Cognitience WP Setup 1.3.0.exe` (NSIS installer) or `Cognitience-WP-Portable-1.3.0.exe` (portable)
-- **macOS:** `.dmg` or `.zip` from the latest release
-- **Linux:** `.tar.gz` archive from the latest release
+```bash
+cargo build --release
+npm install
+npm run dist
+```
+
+Output: `dist/CognitienceWP_v2.0.0.exe` (portable)
+
+Dark mode: moon/sun toggle in the header (persists in localStorage; follows system on first launch).
+
+## Run (dev server)
+
+```bash
+cargo run
+```
+
+Then open **http://127.0.0.1:8787**
+
+```bash
+npm run electron:dev   # Electron shell + release backend
+```
+
+Optional environment variables:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `PORT` | `8787` | HTTP port (localhost only) |
+| `COGNITION_DATA_DIR` | `./documents` | Where `.json` documents are stored |
+| `COGNITION_STATIC_DIR` | `./static` | Frontend assets |
 
 ## Features
 
-### Core Editor
-- Rich text editing with full formatting toolbar
-- Headings (H1-H6), bold, italic, underline, strikethrough
-- Subscript, superscript, and text highlighting
-- Bullet lists, numbered lists, and checklists
-- Tables, code blocks, quote blocks, horizontal rules
-- Links and images
-- Text and background color selection
-- Font size control
-- Paragraph alignment (left, center, right, justify)
-- Spell check (manual SymSpell underlines on demand; custom dictionary persists across restarts), auto-save, find and replace
+- **Apple-style Liquid Glass** chrome: multi-layer frosted fill, blur/sat, specular rim, dynamic pointer/scroll specular + SVG refraction on specular layers, density hierarchy (heavy/medium/light). Document page stays solid white.
+- Local document create / open / auto-save / star
+- Fonts: Inter, Roboto, Open Sans, Merriweather, Lora, Source Serif 4, Playfair Display, JetBrains Mono, and system faces
+- Font size steps of **2** (8 → 72)
+- Text color + **highlight** (with “No highlight”)
+- Bold / italic / underline, alignment, lists, links, print
 
-### Document Templates
-- **arXiv Research Paper** — Academic paper format with two-column layout, abstract, sections, equations, tables, and references
-- **Outline** — Hierarchical numbered outline with sections, subsections, and bullets
-- **Email** — Formal email with To/From/Subject headers, greeting, body, and signature block
-- **Book Manuscript** — Novel/nonfiction format with title page, copyright page, chapter headings, and scene breaks
-
-Access via Insert → Templates, or the Command Palette.
-
-### Export Formats
-- `.cog` — Cognitience WP native format (v3.0.0: Markdown body + YAML frontmatter, human & AI readable)
-- `.md` — Markdown (headings, lists, tables, code blocks, links, images, checklists)
-- `.txt` — Plain text
-- `.html` — Standalone HTML with embedded CSS
-- `.pdf` — PDF via Electron printToPDF (A4)
-- `.docx` — Microsoft Word (Office Open XML, built from scratch)
-- `.doc` — Word 97-2003 (RTF format)
-
-### User Interface
-- VS Code-inspired layout: activity bar, sidebar, editor area, status bar
-- Command palette (Ctrl+Shift+P) with 60+ commands
-- 4 themes: Dark, Light, Sepia, High Contrast
-- Focus mode for distraction-free writing (Escape to exit)
-- Document outline (auto-generated from headings)
-- Context menu, notification system
-- Custom title bar with window controls (Windows/Linux; native traffic lights on macOS)
-- Status bar (word count, reading time, cursor position, theme, spellcheck)
-- In-app settings with Updates, Templates, and Plugin Development panels
-
-### Auto-Update
-- Check for updates from GitHub Releases in Settings
-- Opens the release/download page in your browser (no silent in-app install)
-
-### Extension System (VS Code-style)
-- `package.json` manifest with `contributes`
-- Extension API: commands, editor, documents, notifications, statusBar, toolbar (SVG buttons), config, fs, logger
-- Activation events: onStartup, onCommand, onLanguage, onDocumentOpen, etc.
-- Install/uninstall/enable/disable/reload from Extensions sidebar
-- **Plugin format: `.cogwp`** (ZIP archives, like .vsix for VS Code)
-- **SVG toolbar buttons** — plugins can add buttons to the toolbar with SVG icons
-- **Plugin scaffold wizard** — Help → Developer: Create New Plugin auto-generates the boilerplate
-- Plugin documentation built into the Settings panel
-- Extension gallery is not shipped yet (`galleryEnabled` defaults to off)
-
-### Plugin Compatibility (External Tools)
-- JSON-RPC 2.0 over stdio protocol
-- External tools (Claude Code, Codex, etc.) can plug in
-- Full editor access: get/set content, selection, insertion
-- Language-agnostic (Node.js, Python, anything that speaks JSON-RPC)
-- **Python spellcheck** via [pyspellchecker](https://pypi.org/project/pyspellchecker/) — see `python/spellcheck.py` (`pip install pyspellchecker`)
-- See [Plugin Protocol](docs/plugin-protocol.md)
-
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| Ctrl+N | New Document |
-| Ctrl+O | Open File |
-| Ctrl+S | Save |
-| Ctrl+Shift+S | Save As |
-| Ctrl+F | Find |
-| Ctrl+H | Replace |
-| Ctrl+B | Bold |
-| Ctrl+Shift+B | Toggle Sidebar |
-| Ctrl+I | Italic |
-| Ctrl+U | Underline |
-| Ctrl+K | Insert Link |
-| Ctrl+1-6 | Headings |
-| Ctrl+Shift+P | Command Palette |
-| Ctrl+Shift+F | Focus Mode |
-| Ctrl+Shift+O | Toggle Outline |
-| Ctrl+, | Settings |
-| F11 | Full Screen |
-
-## Build from Source
+## Tests
 
 ```bash
-npm install
-npm run build
-npm start          # Run in dev
-npm run package:win  # Build installer + portable EXE (Windows)
-npm run package:mac  # Build dmg + zip (macOS)
-npm run package:linux  # Build tar.gz (Linux)
+npm test
+npm run test:glass
 ```
 
-## Creating an Extension
+## API (local only)
 
-See [Extension API Guide](docs/extension-api.md).
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/health` | Health + local-mode flag |
+| `GET` | `/api/documents` | List documents |
+| `POST` | `/api/documents` | Create |
+| `GET` | `/api/documents/{id}` | Load |
+| `PUT` | `/api/documents/{id}` | Save |
+| `DELETE` | `/api/documents/{id}` | Delete |
 
-1. Use **Help → Developer: Create New Plugin** to scaffold a new plugin
-2. Edit the generated `package.json`, `main.js`, and `icon.svg`
-3. Zip the folder and rename to `.cogwp`
-4. Install via **Extensions → Install from .cogwp...**
+## Project layout
 
-Or manually:
-1. Create a directory in `%APPDATA%/cognitience-wp/extensions/my-extension/`
-2. Add a `package.json` with manifest
-3. Create `main.js` with `exports.activate = function(ctx) { ... }`
-4. Restart Cognitience WP
+```
+src/           Rust backend (Axum)
+static/        Frontend (HTML/CSS/JS + logo)
+documents/     Local document storage
+```
 
-## Architecture
+## Shortcuts
 
-- **Main Process**: WindowManager, MenuBuilder, IPCRegistry, ExtensionHost, PluginHost, ExportManager, ConfigStore
-- **Preload**: Secure contextBridge (contextIsolation, no nodeIntegration)
-- **Renderer**: HTML/CSS/JS editor with full formatting toolbar, templates, spellcheck
-- **Updates**: GitHub Releases check via IPC (`updates:check` / `updates:downloadAndInstall`)
-- **Declared runtime dependencies** — `js-yaml` (.cog), `jszip`/`jsdom` (docx export), `adm-zip` (.cogwp install), `marked`/`mammoth` (import); config stored as plain JSON
-
-## Known Limitations
-
-- Editor formatting uses `document.execCommand` (legacy Chromium API)
-- Binary `.doc` and PDF import quality is limited; PDFs may open in the system viewer
-- Extensions run in the main process with Node access (install only from trusted sources)
-- Extension gallery / registry is not available yet
-
-## License
-
-MIT — © Maq-Swarm
+| Key | Action |
+| --- | --- |
+| Ctrl/Cmd+S | Save |
+| Ctrl/Cmd+B / I / U | Bold / Italic / Underline |
+| Ctrl/Cmd+Z / Y | Undo / Redo |
+| Ctrl/Cmd+P | Print |
