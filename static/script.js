@@ -1638,7 +1638,87 @@
     markDirty();
   });
 
+  /** Auto-start lists when the line begins with "- " or "1. " (space triggers). */
+  function tryAutoListOnSpace(e) {
+    if (e.key !== ' ' || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return false;
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+    if (!editor.contains(sel.anchorNode)) return false;
+
+    // Already inside a list — don't re-trigger
+    let node = sel.anchorNode;
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    if (node && node.closest && node.closest('li')) return false;
+
+    const range = sel.getRangeAt(0);
+    // Text from start of current block to caret
+    const block = closestBlock(range.startContainer);
+    if (!block || !editor.contains(block)) return false;
+
+    const preRange = document.createRange();
+    preRange.setStart(block, 0);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    const prefix = preRange.toString().replace(/\u200B/g, '');
+    // Only at start of line/block (optional leading whitespace)
+    const trimmed = prefix.replace(/^\s*/, '');
+    let listCmd = null;
+    if (trimmed === '-') {
+      listCmd = 'insertUnorderedList';
+    } else if (/^\d+\.$/.test(trimmed)) {
+      listCmd = 'insertOrderedList';
+    }
+    if (!listCmd) return false;
+
+    e.preventDefault();
+    // Delete the marker (- or 1.) from the block start up to caret
+    const del = document.createRange();
+    del.setStart(block, 0);
+    del.setEnd(range.startContainer, range.startOffset);
+    // Prefer deleting only the marker chars if block has other content after caret — caret is at end of marker
+    del.deleteContents();
+    // Collapse leftover empty text / zwsp
+    if (block.textContent.replace(/\u200B/g, '').trim() === '') {
+      block.innerHTML = '<br>';
+    }
+    // Place caret in the cleaned block
+    const caret = document.createRange();
+    caret.selectNodeContents(block);
+    caret.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(caret);
+    document.execCommand(listCmd, false, null);
+    markDirty();
+    sync();
+    return true;
+  }
+
+  function closestBlock(node) {
+    let n = node;
+    if (n.nodeType === Node.TEXT_NODE) n = n.parentElement;
+    while (n && n !== editor) {
+      const tag = (n.tagName || '').toLowerCase();
+      if (
+        tag === 'p' ||
+        tag === 'div' ||
+        tag === 'h1' ||
+        tag === 'h2' ||
+        tag === 'h3' ||
+        tag === 'h4' ||
+        tag === 'h5' ||
+        tag === 'h6' ||
+        tag === 'li' ||
+        tag === 'blockquote'
+      ) {
+        return n;
+      }
+      n = n.parentElement;
+    }
+    // contenteditable root acting as the block
+    return editor;
+  }
+
   editor.addEventListener('keydown', (e) => {
+    if (tryAutoListOnSpace(e)) return;
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
       const k = e.key.toLowerCase();
       if (k === 'b') {
