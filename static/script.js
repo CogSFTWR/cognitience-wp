@@ -34,6 +34,8 @@
   const fsPlus = document.getElementById('fs-plus');
   const fsVal = document.getElementById('fs-val');
   const floatTb = document.getElementById('floating-toolbar');
+  const textLoupe = document.getElementById('text-loupe');
+  const textLoupeContent = document.getElementById('text-loupe-content');
   const starBtn = document.getElementById('star-btn');
   const undoBtn = document.getElementById('undo-btn');
   const redoBtn = document.getElementById('redo-btn');
@@ -612,6 +614,104 @@
     marginRight.style.right = (marginR / w) * 100 + '%';
   }
 
+  // ── Liquid Glass text loupe (selection magnifier) ───────
+  const LOUPE_SCALE = 1.65;
+  const LOUPE_SIZE = 120;
+  const LOUPE_DRAG_THRESHOLD = 5;
+  let loupeDragging = false;
+  let loupeActive = false;
+  let loupeRaf = 0;
+  let loupeLastX = 0;
+  let loupeLastY = 0;
+  let loupeOriginX = 0;
+  let loupeOriginY = 0;
+  let loupeCloneDirty = true;
+
+  function loupeAllowed() {
+    if (!textLoupe || !textLoupeContent) return false;
+    try {
+      if (window.matchMedia('(prefers-reduced-transparency: reduce)').matches) return false;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    } catch {
+      /* ignore */
+    }
+    return true;
+  }
+
+  function refreshLoupeClone() {
+    if (!textLoupeContent || !editor) return;
+    textLoupeContent.innerHTML = editor.innerHTML || '&nbsp;';
+    textLoupeContent.style.width = editor.clientWidth + 'px';
+    textLoupeContent.style.minHeight = editor.clientHeight + 'px';
+    textLoupeContent.style.padding = getComputedStyle(editor).padding;
+    textLoupeContent.style.font = getComputedStyle(editor).font;
+    textLoupeContent.style.lineHeight = getComputedStyle(editor).lineHeight;
+    textLoupeContent.style.letterSpacing = getComputedStyle(editor).letterSpacing;
+    textLoupeContent.style.whiteSpace = 'pre-wrap';
+    textLoupeContent.style.wordBreak = 'break-word';
+    textLoupeContent.style.boxSizing = 'border-box';
+    textLoupeContent.style.setProperty('--loupe-scale', String(LOUPE_SCALE));
+    loupeCloneDirty = false;
+  }
+
+  function positionLoupe(clientX, clientY) {
+    if (!loupeAllowed()) return;
+    const half = LOUPE_SIZE / 2;
+    const editorRect = editor.getBoundingClientRect();
+    // Focus in editor local coords (content under the pointer)
+    const focusX = clientX - editorRect.left;
+    const focusY = clientY - editorRect.top;
+
+    if (loupeCloneDirty) refreshLoupeClone();
+
+    // Place magnified content so focus sits at loupe center
+    const off =
+      window.CognitionLiquidGlass && window.CognitionLiquidGlass.loupeContentOffset
+        ? window.CognitionLiquidGlass.loupeContentOffset(focusX, focusY, LOUPE_SIZE, LOUPE_SCALE)
+        : { tx: half - focusX * LOUPE_SCALE, ty: half - focusY * LOUPE_SCALE, scale: LOUPE_SCALE };
+    textLoupeContent.style.transform =
+      'translate3d(' + off.tx + 'px,' + off.ty + 'px,0) scale(' + off.scale + ')';
+
+    textLoupe.style.left = clientX + 'px';
+    textLoupe.style.top = clientY + 'px';
+    textLoupe.classList.add('is-visible');
+    textLoupe.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideLoupe() {
+    if (!textLoupe) return;
+    textLoupe.classList.remove('is-visible');
+    textLoupe.setAttribute('aria-hidden', 'true');
+  }
+
+  function scheduleLoupe(clientX, clientY) {
+    loupeLastX = clientX;
+    loupeLastY = clientY;
+    if (loupeRaf) return;
+    loupeRaf = requestAnimationFrame(() => {
+      loupeRaf = 0;
+      if (!loupeDragging) return;
+      if (!loupeActive) {
+        const dx = loupeLastX - loupeOriginX;
+        const dy = loupeLastY - loupeOriginY;
+        if (dx * dx + dy * dy < LOUPE_DRAG_THRESHOLD * LOUPE_DRAG_THRESHOLD) return;
+        loupeActive = true;
+      }
+      // Keep loupe over the editor surface only
+      const r = editor.getBoundingClientRect();
+      if (
+        loupeLastX < r.left - 8 ||
+        loupeLastX > r.right + 8 ||
+        loupeLastY < r.top - 8 ||
+        loupeLastY > r.bottom + 8
+      ) {
+        hideLoupe();
+        return;
+      }
+      positionLoupe(loupeLastX, loupeLastY);
+    });
+  }
+
   // ── Sync toolbar ───────────────────────────────────────
   function sync() {
     try {
@@ -633,11 +733,24 @@
       if (sel && !sel.isCollapsed && editor.contains(sel.anchorNode)) {
         floatTb.classList.remove('hidden');
         try {
-          const rect = sel.getRangeAt(0).getBoundingClientRect();
+          const range = sel.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
           const paperRect = paper.getBoundingClientRect();
-          let top = rect.top - paperRect.top + rect.height / 2 - 60;
-          top = Math.max(20, Math.min(top, paperRect.height - 140));
-          floatTb.style.top = top + 'px';
+          const layout =
+            window.CognitionLiquidGlass && window.CognitionLiquidGlass.floatingToolbarLayout
+              ? window.CognitionLiquidGlass.floatingToolbarLayout(rect, paperRect, {
+                  barHeight: 44,
+                  gap: 10,
+                  pad: 12,
+                  halfWidth: Math.min(100, paperRect.width / 2 - 12),
+                })
+              : {
+                  left: rect.left + rect.width / 2 - paperRect.left,
+                  top: Math.max(8, rect.top - paperRect.top - 54),
+                };
+          floatTb.style.left = layout.left + 'px';
+          floatTb.style.top = layout.top + 'px';
+          floatTb.style.right = 'auto';
         } catch {
           /* ignore */
         }
@@ -1753,13 +1866,44 @@
 
   ['keyup', 'mouseup', 'focus', 'input'].forEach((ev) => {
     editor.addEventListener(ev, () => {
-      if (ev === 'input') markDirty();
+      if (ev === 'input') {
+        markDirty();
+        loupeCloneDirty = true;
+      }
       sync();
     });
   });
   document.addEventListener('selectionchange', () => {
     if (document.activeElement === editor || editor.contains(document.activeElement)) sync();
   });
+
+  // Text loupe: glass magnifier while dragging to select (WWDC liquid lens)
+  editor.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || !loupeAllowed()) return;
+    loupeDragging = true;
+    loupeActive = false;
+    loupeCloneDirty = true;
+    loupeOriginX = e.clientX;
+    loupeOriginY = e.clientY;
+    loupeLastX = e.clientX;
+    loupeLastY = e.clientY;
+  });
+  window.addEventListener(
+    'pointermove',
+    (e) => {
+      if (!loupeDragging) return;
+      scheduleLoupe(e.clientX, e.clientY);
+    },
+    { passive: true }
+  );
+  function endLoupe() {
+    loupeDragging = false;
+    loupeActive = false;
+    hideLoupe();
+  }
+  window.addEventListener('pointerup', endLoupe);
+  window.addEventListener('pointercancel', endLoupe);
+  editor.addEventListener('blur', endLoupe);
 
   document.querySelectorAll('.t-icon, .t-btn, .t-drop').forEach((el) => {
     el.addEventListener('mousedown', (e) => {

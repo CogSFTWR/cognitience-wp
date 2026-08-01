@@ -1,8 +1,7 @@
 {
   "name": "cognitience-wp",
-  "version": "2.0.0",
-  "description": "Cognitience WP — local-first word processor with liquid glass UI and Rust backend",
-  "main": "electron/main.js",
+  "version": "2.1.1",
+  "description": "Cognitience WP \u2014 local-first word processor with liquid glass UI and Rust backend",
   "author": "Cognitience",
   "license": "MIT",
   "private": true,
@@ -13,66 +12,18 @@
     "backend": "cargo run --release",
     "backend:build": "cargo build --release",
     "start": "cargo run",
-    "electron": "electron .",
-    "electron:dev": "cargo build --release && electron .",
+    "native": "cargo build --release && cargo build --release --manifest-path native-host/Cargo.toml && powershell -NoProfile -Command \"Start-Process -FilePath (Resolve-Path 'native-host/target/release/cognition-wp-native.exe') -WindowStyle Normal\"",
+    "native:build": "cargo build --release && cargo build --release --manifest-path native-host/Cargo.toml",
+    "native:headless": "cargo build --release && cargo build --release --manifest-path native-host/Cargo.toml && set COGNITION_NATIVE_HEADLESS_SECS=20&& native-host\\target\\release\\cognition-wp-native.exe --headless",
     "icon": "node scripts/make-icon.js",
-    "dist": "cargo build --release && node scripts/make-icon.js && electron-builder --win portable",
-    "dist:dir": "cargo build --release && node scripts/make-icon.js && electron-builder --win dir"
-  },
-  "build": {
-    "appId": "com.cognitience.wp",
-    "productName": "Cognitience WP",
-    "copyright": "Copyright © Cognitience",
-    "directories": {
-      "output": "dist",
-      "buildResources": "build"
-    },
-    "files": [
-      "electron/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "target/release/cognition-wp.exe",
-        "to": "backend/cognition-wp.exe"
-      },
-      {
-        "from": "static",
-        "to": "static"
-      },
-      {
-        "from": "build/icon.ico",
-        "to": "build/icon.ico"
-      }
-    ],
-    "win": {
-      "icon": "build/icon.ico",
-      "target": [
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "artifactName": "CognitienceWP_v${version}.${ext}"
-    },
-    "portable": {
-      "artifactName": "CognitienceWP_v${version}.${ext}"
-    },
-    "asar": true,
-    "compression": "maximum"
+    "dist": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-native-win.ps1",
+    "dist:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-native-win.ps1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Maq-Swarm/cognitience-wp.git"
+    "url": "git+https://github.com/CogSFTWR/cognitience-wp.git"
   },
   "devDependencies": {
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8",
     "png-to-ico": "^2.1.8"
-  },
-  "allowScripts": {
-    "electron@33.2.1": true
   }
 }

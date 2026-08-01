@@ -1,4 +1,5 @@
 /target
+/native-host/target
 /documents/*.json
 !/documents/.gitkeep
 /node_modules

@@ -300,6 +300,9 @@
                 <button type="button" class="ft-btn pressable" title="Italic" data-ft="italic" aria-label="Italic">
                   <span class="material-symbols-outlined" aria-hidden="true">format_italic</span>
                 </button>
+                <button type="button" class="ft-btn pressable" title="Underline" data-ft="underline" aria-label="Underline">
+                  <span class="material-symbols-outlined" aria-hidden="true">format_underlined</span>
+                </button>
                 <button type="button" class="ft-btn pressable" title="Highlight" data-ft="highlight" aria-label="Highlight">
                   <span class="material-symbols-outlined" aria-hidden="true">ink_highlighter</span>
                 </button>
@@ -321,6 +324,13 @@
           <iframe id="pdf-frame" class="hidden" title="PDF document"></iframe>
         </div>
       </main>
+    </div>
+
+    <!-- Liquid Glass text loupe (magnifying lens while selecting) -->
+    <div id="text-loupe" aria-hidden="true">
+      <div id="text-loupe-viewport">
+        <div id="text-loupe-content"></div>
+      </div>
     </div>
   </div>
 

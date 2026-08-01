@@ -7,19 +7,24 @@ Nothing is uploaded to the cloud. Documents are JSON files on disk.
 ## Requirements
 
 - Rust 1.75+ (`cargo`)
-- A modern browser (Chrome, Edge, Firefox, Safari)
+- **Windows**: Microsoft Edge WebView2 Runtime (usually preinstalled)
+- **macOS / Linux**: system WebKit (built via GitHub Actions native workflow)
 
-## Desktop app (Electron)
+## Desktop app (native)
+
+Thin desktop host (WebView2 on Windows, WKWebView/WebKit elsewhere) that spawns the Rust backend — **no Electron**.
 
 ```bash
-cargo build --release
-npm install
-npm run dist
+# Windows
+npm run native:build
+npm run native
+npm run dist          # portable zip under dist/
 ```
 
-Output: `dist/CognitienceWP_v2.0.0.exe` (portable)
+Binary (dev): `native-host/target/release/cognition-wp-native.exe`  
+Portable package: `dist/CognitienceWP_v*_win.zip` → run `CognitienceWP.exe`
 
-Dark mode: moon/sun toggle in the header (persists in localStorage; follows system on first launch).
+See `native-host/README.md`.
 
 ## Run (dev server)
 
@@ -28,10 +33,6 @@ cargo run
 ```
 
 Then open **http://127.0.0.1:8787**
-
-```bash
-npm run electron:dev   # Electron shell + release backend
-```
 
 Optional environment variables:
 
@@ -43,12 +44,9 @@ Optional environment variables:
 
 ## Features
 
-- **Apple-style Liquid Glass** chrome: multi-layer frosted fill, blur/sat, specular rim, dynamic pointer/scroll specular + SVG refraction on specular layers, density hierarchy (heavy/medium/light). Document page stays solid white.
+- **Apple-style Liquid Glass** chrome
 - Local document create / open / auto-save / star
-- Fonts: Inter, Roboto, Open Sans, Merriweather, Lora, Source Serif 4, Playfair Display, JetBrains Mono, and system faces
-- Font size steps of **2** (8 → 72)
-- Text color + **highlight** (with “No highlight”)
-- Bold / italic / underline, alignment, lists, links, print
+- Fonts, colors, highlight, bold/italic/underline, lists, links, print
 
 ## Tests
 
@@ -57,30 +55,6 @@ npm test
 npm run test:glass
 ```
 
-## API (local only)
+## License
 
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/health` | Health + local-mode flag |
-| `GET` | `/api/documents` | List documents |
-| `POST` | `/api/documents` | Create |
-| `GET` | `/api/documents/{id}` | Load |
-| `PUT` | `/api/documents/{id}` | Save |
-| `DELETE` | `/api/documents/{id}` | Delete |
-
-## Project layout
-
-```
-src/           Rust backend (Axum)
-static/        Frontend (HTML/CSS/JS + logo)
-documents/     Local document storage
-```
-
-## Shortcuts
-
-| Key | Action |
-| --- | --- |
-| Ctrl/Cmd+S | Save |
-| Ctrl/Cmd+B / I / U | Bold / Italic / Underline |
-| Ctrl/Cmd+Z / Y | Undo / Redo |
-| Ctrl/Cmd+P | Print |
+MIT

@@ -1,35 +1,39 @@
 /* Cognition WP — Apple Liquid Glass material system
-   Layers: frosted fill + blur/sat + specular rim + dynamic specular
-   + refraction/lensing offset + depth shadow. Functional chrome only. */
+   Clear lens fill + blur/sat + continuous edge light + dynamic specular
+   + refraction offset + ambient depth. Functional chrome only; paper solid. */
 
 :root {
   color-scheme: light;
 
-  /* Density tokens — monochrome frost (readable on white) */
-  --lg-fill-heavy: rgba(246, 246, 248, 0.78);
-  --lg-fill-medium: rgba(242, 242, 244, 0.7);
-  --lg-fill-light: rgba(250, 250, 252, 0.62);
+  /* Density tokens — clearer lens frost (WWDC liquid glass read) */
+  --lg-fill-heavy: rgba(255, 255, 255, 0.55);
+  --lg-fill-medium: rgba(255, 255, 255, 0.42);
+  --lg-fill-light: rgba(255, 255, 255, 0.32);
   --lg-blur-heavy: 48px;
-  --lg-blur-medium: 32px;
-  --lg-blur-light: 22px;
+  --lg-blur-medium: 36px;
+  --lg-blur-light: 24px;
   --lg-sat-heavy: 100%;
   --lg-sat-medium: 100%;
   --lg-sat-light: 100%;
-  --lg-rim: rgba(255, 255, 255, 0.78);
-  --lg-rim-soft: rgba(255, 255, 255, 0.42);
-  --lg-edge-dark: rgba(0, 0, 0, 0.06);
+  /* Continuous edge light catch (physical glass rim) */
+  --lg-rim: rgba(255, 255, 255, 0.92);
+  --lg-rim-soft: rgba(255, 255, 255, 0.55);
+  --lg-edge-dark: rgba(0, 0, 0, 0.08);
   --lg-shadow-heavy:
-    0 10px 40px rgba(0, 0, 0, 0.1),
-    0 2px 10px rgba(0, 0, 0, 0.05),
+    0 12px 40px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 var(--lg-rim),
-    inset 0 -0.5px 0 rgba(255, 255, 255, 0.18);
+    inset 0 -1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.45);
   --lg-shadow-medium:
-    0 6px 24px rgba(0, 0, 0, 0.08),
-    0 1px 4px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 var(--lg-rim-soft);
+    0 8px 28px rgba(0, 0, 0, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 var(--lg-rim),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.35);
   --lg-shadow-light:
-    0 2px 12px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.4);
 
   /* Dynamic specular / refraction (driven by liquid-glass.js) */
   --specular-x: 48%;
@@ -76,24 +80,27 @@
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --lg-fill-heavy: rgba(44, 44, 46, 0.82);
-  --lg-fill-medium: rgba(38, 38, 40, 0.75);
-  --lg-fill-light: rgba(50, 50, 52, 0.68);
-  --lg-rim: rgba(255, 255, 255, 0.14);
-  --lg-rim-soft: rgba(255, 255, 255, 0.1);
-  --lg-edge-dark: rgba(255, 255, 255, 0.06);
+  --lg-fill-heavy: rgba(40, 40, 42, 0.62);
+  --lg-fill-medium: rgba(36, 36, 38, 0.52);
+  --lg-fill-light: rgba(48, 48, 50, 0.42);
+  --lg-rim: rgba(255, 255, 255, 0.28);
+  --lg-rim-soft: rgba(255, 255, 255, 0.14);
+  --lg-edge-dark: rgba(255, 255, 255, 0.08);
   --lg-shadow-heavy:
-    0 10px 40px rgba(0, 0, 0, 0.45),
-    0 2px 10px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -0.5px 0 rgba(255, 255, 255, 0.04);
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 2px 10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
   --lg-shadow-medium:
-    0 6px 24px rgba(0, 0, 0, 0.4),
-    0 1px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 1px 4px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
   --lg-shadow-light:
-    0 2px 12px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
 
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-border-soft: rgba(255, 255, 255, 0.08);
@@ -166,10 +173,10 @@ button:focus-visible {
 }
 
 /* ── Liquid Glass material (multi-layer, monochrome) ─────
-   1) Frosted fill + backdrop blur/sat
-   2) ::before  — specular rim + top light catch + grain
+   1) Clear lens fill + backdrop blur/sat
+   2) ::before  — continuous edge light (physical glass rim)
    3) ::after   — dynamic specular + refraction offset
-   4) box-shadow — depth + inset rim
+   4) box-shadow — ambient depth + inset rim
    Content children sit above via z-index.
 */
 .liquid-glass,
@@ -187,12 +194,12 @@ button:focus-visible {
   backdrop-filter:
     blur(var(--lg-blur))
     saturate(var(--lg-sat))
-    brightness(1.04);
+    brightness(1.06);
   -webkit-backdrop-filter:
     blur(var(--lg-blur))
     saturate(var(--lg-sat))
-    brightness(1.04);
-  border: 1px solid var(--border);
+    brightness(1.06);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
   box-shadow: var(--lg-depth);
 }
 
@@ -202,7 +209,7 @@ button:focus-visible {
   overflow: hidden;
 }
 
-/* Layer 2 — solid rim / materialization (no gradients) */
+/* Layer 2 — continuous edge light / materialization */
 .liquid-glass::before,
 .glass::before {
   content: "";
@@ -211,20 +218,22 @@ button:focus-visible {
   border-radius: inherit;
   pointer-events: none;
   z-index: 1;
-  background: var(--lg-rim-soft);
-  mix-blend-mode: soft-light;
+  background: transparent;
   box-shadow:
     inset 0 1px 0 var(--lg-rim),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.25),
+    inset 0.5px 0 0 rgba(255, 255, 255, 0.35),
+    inset -0.5px 0 0 rgba(255, 255, 255, 0.2),
     inset 0 0 0 0.5px var(--lg-rim-soft);
 }
 
-/* Layer 3 — solid specular disc + refraction offset (no gradients) */
+/* Layer 3 — specular highlight disc + refraction offset */
 .liquid-glass::after,
 .glass::after {
   content: "";
   position: absolute;
-  width: 42%;
-  height: 36%;
+  width: 48%;
+  height: 40%;
   left: var(--specular-x);
   top: var(--specular-y);
   border-radius: 50%;
@@ -232,16 +241,21 @@ button:focus-visible {
   z-index: 2;
   background: var(--lg-rim);
   mix-blend-mode: soft-light;
-  opacity: 0.55;
+  opacity: 0.62;
   transform: translate3d(calc(-50% + var(--refract-x)), calc(-50% + var(--refract-y)), 0);
   will-change: transform, left, top;
   filter: url(#lg-refract);
   /* No CSS transition on specular — rAF-driven, fully interruptible */
 }
 
+html[data-theme="dark"] .liquid-glass,
+html[data-theme="dark"] .glass {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 html[data-theme="dark"] .liquid-glass::after,
 html[data-theme="dark"] .glass::after {
-  opacity: 0.22;
+  opacity: 0.28;
 }
 
 /* Keep interactive children above glass layers */
@@ -279,12 +293,12 @@ html[data-theme="dark"] .glass::after {
 
 .glass-inset {
   background: rgba(255, 255, 255, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
   box-shadow:
-    inset 0 1px 2px rgba(15, 23, 42, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+    inset 0 1px 2px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(14px) saturate(100%);
+  -webkit-backdrop-filter: blur(14px) saturate(100%);
 }
 
 .pressable {
@@ -493,15 +507,15 @@ html[data-theme="dark"] .glass::after {
 
 .glass-btn {
   --lg-fill: var(--lg-fill-light);
-  --lg-blur: 18px;
-  --lg-sat: 165%;
+  --lg-blur: 22px;
+  --lg-sat: 100%;
   height: 36px;
   padding: 0 14px 0 10px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
   background: var(--lg-fill);
-  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.03);
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.03);
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.05);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.05);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -524,8 +538,9 @@ html[data-theme="dark"] .glass::after {
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-  background: rgba(255, 255, 255, 0.28);
-  mix-blend-mode: soft-light;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.4);
 }
 
 .glass-btn > * {
@@ -633,7 +648,7 @@ html[data-theme="dark"] #save-btn .material-symbols-outlined {
   background: transparent;
   min-width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -642,15 +657,46 @@ html[data-theme="dark"] #save-btn .material-symbols-outlined {
   position: relative;
   padding: 0 4px;
   flex-shrink: 0;
+  z-index: 1;
 }
 
 .t-icon:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.45);
 }
 
+/* Liquid selection bubble under active format/align controls */
 .t-icon.active {
-  background: var(--accent-soft) !important;
+  background: transparent !important;
   color: var(--accent);
+}
+
+.t-icon.active::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 999px;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.72);
+  border: 0.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px) saturate(100%) brightness(1.06);
+  -webkit-backdrop-filter: blur(16px) saturate(100%) brightness(1.06);
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .t-icon {
+  color: #d1d1d6;
+}
+
+html[data-theme="dark"] .t-icon.active::before {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .t-icon.mini {
@@ -1731,28 +1777,32 @@ body.pdf-open #center {
   text-decoration: underline;
 }
 
+/* Horizontal liquid-glass selection capsule (above selection) */
 .floating-glass {
-  --lg-fill: rgba(255, 255, 255, 0.55);
-  --lg-blur: 28px;
-  --lg-sat: 180%;
+  --lg-fill: rgba(255, 255, 255, 0.48);
+  --lg-blur: 32px;
+  --lg-sat: 100%;
   --lg-depth: var(--lg-shadow-heavy);
   position: absolute;
-  right: -52px;
-  top: 120px;
+  left: 50%;
+  top: 80px;
   isolation: isolate;
-  /* clip radius only — no nested popovers */
   overflow: hidden;
   background: var(--lg-fill);
-  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.05);
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.05);
-  border-radius: 24px;
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.06);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.06);
+  border-radius: 999px;
   box-shadow: var(--lg-depth);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  padding: 6px 4px;
+  border: 0.5px solid rgba(255, 255, 255, 0.65);
+  padding: 4px 6px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 4;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  z-index: 12;
+  transform: translate3d(-50%, 0, 0);
+  will-change: transform, left, top;
+  transition: opacity 140ms var(--spring), transform 180ms var(--spring);
 }
 
 .floating-glass::before {
@@ -1762,22 +1812,25 @@ body.pdf-open #center {
   border-radius: inherit;
   pointer-events: none;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.22);
-  mix-blend-mode: soft-light;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.45);
 }
 
 .floating-glass::after {
   content: "";
   position: absolute;
   width: 48%;
-  height: 40%;
+  height: 55%;
   left: var(--specular-x);
   top: var(--specular-y);
   border-radius: 50%;
   pointer-events: none;
   z-index: 2;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.55);
   mix-blend-mode: soft-light;
+  opacity: 0.7;
   transform: translate3d(calc(-50% + var(--refract-x)), calc(-50% + var(--refract-y)), 0);
   filter: url(#lg-refract);
 }
@@ -1791,12 +1844,17 @@ body.pdf-open #center {
   display: none;
 }
 
+html[data-theme="dark"] .floating-glass {
+  --lg-fill: rgba(44, 44, 46, 0.55);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
 .ft-btn {
   width: 36px;
   height: 36px;
   border: none;
   background: transparent;
-  border-radius: 50%;
+  border-radius: 999px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -1805,7 +1863,112 @@ body.pdf-open #center {
 }
 
 .ft-btn:hover {
-  background: var(--accent-soft);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme="dark"] .ft-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Text selection loupe (liquid glass lens) ──────────── */
+#text-loupe {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 80;
+  overflow: hidden;
+  isolation: isolate;
+  transform: translate3d(-50%, calc(-100% - 18px), 0) scale(0.92);
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, left, top, opacity;
+  background: rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(2px) saturate(100%) brightness(1.04);
+  -webkit-backdrop-filter: blur(2px) saturate(100%) brightness(1.04);
+  border: 0.5px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
+  transition: opacity 100ms var(--spring), transform 120ms var(--spring), visibility 0s linear 100ms;
+}
+
+#text-loupe.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate3d(-50%, calc(-100% - 18px), 0) scale(1);
+  transition: opacity 100ms var(--spring), transform 120ms var(--spring), visibility 0s;
+}
+
+#text-loupe::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.55),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.06);
+}
+
+#text-loupe::after {
+  /* center caret tick */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 28px;
+  margin-left: -1px;
+  margin-top: -14px;
+  background: #0071e3;
+  border-radius: 1px;
+  z-index: 4;
+  pointer-events: none;
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.5);
+}
+
+#text-loupe-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+#text-loupe-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  color: var(--paper-text);
+  background: var(--paper);
+  /* Magnification set in JS via --loupe-scale */
+  transform: scale(var(--loupe-scale, 1.65));
+  will-change: transform;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-theme="dark"] #text-loupe {
+  background: rgba(40, 40, 42, 0.45);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] #text-loupe::after {
+  background: #0a84ff;
 }
 
 /* ── Selection ─────────────────────────────────────────── */
@@ -1843,10 +2006,6 @@ body.pdf-open #center {
     border-radius: 16px;
   }
 
-  .floating-glass {
-    right: 8px;
-  }
-
   #work {
     padding: 6px;
   }
@@ -1880,7 +2039,8 @@ body.pdf-open #center {
   #header,
   #left,
   #ruler,
-  #floating-toolbar {
+  #floating-toolbar,
+  #text-loupe {
     display: none !important;
   }
 
@@ -1933,6 +2093,11 @@ body.pdf-open #center {
   .floating-glass::after {
     transform: none !important;
   }
+
+  #text-loupe,
+  .floating-glass {
+    transition: none !important;
+  }
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -1949,7 +2114,8 @@ body.pdf-open #center {
   .floating-glass,
   .toolbar-pill,
   .glass-inset,
-  .picker {
+  .picker,
+  #text-loupe {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     filter: none !important;
@@ -1966,7 +2132,9 @@ body.pdf-open #center {
   .glass-menu::after,
   .floating-glass::before,
   .floating-glass::after,
-  .glass-btn::before {
+  .glass-btn::before,
+  .t-icon.active::before,
+  #text-loupe::before {
     display: none !important;
   }
 
@@ -1980,5 +2148,21 @@ body.pdf-open #center {
   #paper,
   #editor {
     background: var(--paper) !important;
+  }
+
+  html[data-theme="dark"] .liquid-glass,
+  html[data-theme="dark"] .glass,
+  html[data-theme="dark"] .glass-btn,
+  html[data-theme="dark"] .glass-menu,
+  html[data-theme="dark"] .floating-glass,
+  html[data-theme="dark"] #text-loupe {
+    background: rgba(44, 44, 46, 0.98) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  #text-loupe {
+    display: none !important;
   }
 }

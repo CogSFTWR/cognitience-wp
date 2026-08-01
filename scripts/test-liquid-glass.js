@@ -158,6 +158,8 @@ assert(
 );
 assert(css.includes('prefers-reduced-transparency'), 'reduced-transparency fallback');
 assert(css.includes('prefers-reduced-motion'), 'reduced-motion fallback');
+assert(css.includes('#text-loupe'), 'CSS defines text loupe');
+assert(css.includes('border-radius: 999px') || css.includes('border-radius:999px'), 'capsule radii present');
 
 // Paper must not be glass
 const paperBlock = css.match(/#paper[\s\S]{0,800}/);
@@ -185,6 +187,8 @@ assert(html.includes('id="toolbar"') && html.includes('liquid-glass'), 'toolbar 
 assert(html.includes('id="left"') && html.includes('liquid-glass--medium'), 'sidebar is glass');
 assert(html.includes('floating-glass'), 'floating toolbar is glass');
 assert(html.includes('glass-menu'), 'menus use glass-menu');
+assert(html.includes('id="text-loupe"'), 'text loupe element present');
+assert(html.includes('id="text-loupe-content"'), 'text loupe content layer present');
 assert(html.includes('paper-surface') || /id="paper"[^>]*class="[^"]*paper/.test(html), 'paper is solid surface');
 assert(!/id="paper"[^>]*class="[^"]*liquid-glass/.test(html), 'paper is not liquid-glass');
 assert(!/id="editor"[^>]*class="[^"]*liquid-glass/.test(html), 'editor is not liquid-glass');
@@ -195,6 +199,30 @@ console.log('\n9. Frontend wires CognitionLiquidGlass.attach');
 const script = fs.readFileSync(scriptPath, 'utf8');
 assert(script.includes('CognitionLiquidGlass'), 'script references CognitionLiquidGlass');
 assert(script.includes('.attach('), 'script calls attach()');
+assert(script.includes('text-loupe') || script.includes('textLoupe'), 'script wires text loupe');
+assert(script.includes('loupeContentOffset') || script.includes('LOUPE_SCALE'), 'script positions loupe content');
+
+// ── 9b. Loupe + floating toolbar layout math ─────────────
+console.log('\n9b. Loupe / floating toolbar layout helpers');
+assert(typeof LG.loupeContentOffset === 'function', 'exports loupeContentOffset');
+assert(typeof LG.floatingToolbarLayout === 'function', 'exports floatingToolbarLayout');
+const lo = LG.loupeContentOffset(40, 30, 120, 2);
+assertClose(lo.tx, 60 - 80, 0.05, 'loupe tx centers focusX under scale');
+assertClose(lo.ty, 60 - 60, 0.05, 'loupe ty centers focusY under scale');
+assertClose(lo.scale, 2, 0.001, 'loupe scale preserved');
+const ft = LG.floatingToolbarLayout(
+  { left: 200, top: 300, width: 100, height: 20, bottom: 320 },
+  { left: 0, top: 0, width: 800, height: 1000 },
+  { barHeight: 44, gap: 8, pad: 8, halfWidth: 90 }
+);
+assert(ft.top < 300, 'toolbar sits above selection when room allows');
+assert(ft.left > 90 && ft.left < 800 - 90, 'toolbar left clamped in host');
+const ftLow = LG.floatingToolbarLayout(
+  { left: 100, top: 10, width: 80, height: 16, bottom: 26 },
+  { left: 0, top: 0, width: 400, height: 200 },
+  { barHeight: 44, gap: 8, pad: 8, halfWidth: 60 }
+);
+assert(ftLow.top >= 8, 'toolbar flips below when no room above');
 
 // ── 10. Overflow must not clip chrome popovers ───────────
 console.log('\n10. Overflow rules for menus / pickers (skeptic-fixed)');
@@ -259,7 +287,10 @@ assert(
       html.indexOf('id="font-menu"') > html.indexOf('</div>', html.indexOf('id="toolbar"'))),
   'font-menu is outside toolbar-scroll / not nested in scroller'
 );
-assert(script.includes('positionFontMenu'), 'script positions portaled font menu');
+assert(
+  script.includes('positionMenu') || script.includes('positionFontMenu'),
+  'script positions portaled font menu'
+);
 
 // ── Summary ──────────────────────────────────────────────
 console.log('\n=== Results ===');

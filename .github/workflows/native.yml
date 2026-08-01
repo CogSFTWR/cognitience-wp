@@ -1,0 +1,85 @@
+name: Native desktop
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install icon tool
+        run: npm install --no-save png-to-ico
+      - name: Build + package Windows
+        shell: pwsh
+        run: ./scripts/package-native-win.ps1
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CognitienceWP-windows
+          path: dist/*_win.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build backend + native host (macOS)
+        run: |
+          cargo build --release
+          cargo build --release --manifest-path native-host/Cargo.toml
+      - name: Stage portable layout
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          OUT="dist/CognitienceWP_v${VER}_mac_$(uname -m)"
+          mkdir -p "$OUT/backend" "$OUT/build"
+          cp native-host/target/release/cognition-wp-native "$OUT/CognitienceWP"
+          cp target/release/cognition-wp "$OUT/backend/cognition-wp"
+          chmod +x "$OUT/CognitienceWP" "$OUT/backend/cognition-wp"
+          cp -R static "$OUT/static"
+          if [ -f build/icon.png ]; then cp build/icon.png "$OUT/build/icon.png"; fi
+          (cd dist && zip -r "CognitienceWP_v${VER}_mac_$(uname -m).zip" "CognitienceWP_v${VER}_mac_$(uname -m)")
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CognitienceWP-macos
+          path: dist/*_mac_*.zip
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install WebKit / GTK deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Build backend + native host (Linux)
+        run: |
+          cargo build --release
+          cargo build --release --manifest-path native-host/Cargo.toml
+      - name: Stage portable layout
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          OUT="dist/CognitienceWP_v${VER}_linux_x64"
+          mkdir -p "$OUT/backend" "$OUT/build"
+          cp native-host/target/release/cognition-wp-native "$OUT/CognitienceWP"
+          cp target/release/cognition-wp "$OUT/backend/cognition-wp"
+          chmod +x "$OUT/CognitienceWP" "$OUT/backend/cognition-wp"
+          cp -R static "$OUT/static"
+          if [ -f build/icon.png ]; then cp build/icon.png "$OUT/build/icon.png"; fi
+          (cd dist && tar -czf "CognitienceWP_v${VER}_linux_x64.tar.gz" "CognitienceWP_v${VER}_linux_x64")
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CognitienceWP-linux
+          path: dist/*_linux_*.tar.gz
