@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cognitience â€” Open, local-first office software</title>
+  <meta name="description" content="Download Cognitience WP, SS, and PP â€” MIT-licensed, local-first word processor, spreadsheet, and presentation apps. No cloud, no accounts, no telemetry." />
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    (function () {
+      var stored = null;
+      try { stored = localStorage.getItem('cog-theme'); } catch (e) {}
+      var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <img src="logo.png" alt="Cognitience logo" />
+        <span>Cognitience</span>
+      </a>
+      <nav class="main-nav">
+        <a href="index.html" class="active">Downloads</a>
+        <a href="blog.html">Blog</a>
+      </nav>
+      <div class="header-actions">
+        <div class="social-links social-links-header">
+          <a href="https://x.com/waylon_bro37117" target="_blank" rel="noopener" aria-label="X (Twitter)" title="X">
+            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          <a href="https://discord.gg/bGSz9bQfY4" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
+            <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+          </a>
+          <a href="https://github.com/WlnJBrn09" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+            <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          </a>
+        </div>
+        <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark / light theme" title="Toggle theme">
+          <svg id="theme-icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display:none"><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-14a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm8-8a1 1 0 0 1 1 1 1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1zM5 12a1 1 0 0 1-1 1H3a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1zm13.66-6.66a1 1 0 0 1 1.41 1.41l-.7.71a1 1 0 0 1-1.42-1.42l.71-.7zM6.34 16.24a1 1 0 0 1 1.41 1.41l-.7.71A1 1 0 1 1 5.63 16.95l.71-.71zm12.02 2.12-.71-.7a1 1 0 0 1 1.42-1.42l.7.71a1 1 0 0 1-1.41 1.41zM7.76 6.34l-.71-.7A1 1 0 1 1 8.46 4.22l.71.7A1 1 0 1 1 7.76 6.34z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <img class="hero-logo rise" src="logo.png" alt="Cognitience" />
+      <h1 class="rise rise-1">Office software that<br />belongs to you.</h1>
+      <p class="lede rise rise-2">
+        Cognitience is a suite of open-source, local-first apps â€” a word processor,
+        a spreadsheet, and a presentation tool. Your files stay on your machine.
+        Your formats stay open. No accounts, no subscriptions, no telemetry.
+      </p>
+      <div class="hero-cta rise rise-3">
+        <a class="btn btn-primary" href="#downloads">Download for Windows, Mac, or Linux</a>
+        <a class="btn btn-ghost" href="https://github.com/WlnJBrn09" target="_blank" rel="noopener">View the source</a>
+      </div>
+    </section>
+
+    <section class="section" id="downloads">
+      <div class="section-head">
+        <h2>Downloads</h2>
+        <p>Free forever, MIT-licensed <strong>native</strong> desktop apps (no Electron). Windows: installer. Mac (Apple Silicon) and Linux: portable native package — extract and run.</p>
+      </div>
+      <div class="downloads-grid">
+
+        <article class="app-card liquid-glass card-wp">
+          <img class="app-icon" src="logo-wp.png" alt="Cognitience WP icon" />
+          <h3>Cognitience WP <span class="version-pill">v2.1.1</span></h3>
+          <p class="app-tagline">A clean, focused word processor. Write without a toolbar shouting at you.</p>
+          <ul class="app-meta">
+            <li>Documents stored as open JSON on your disk</li>
+            <li>Rich fonts, colors, highlight, lists, links, print</li>
+            <li>Native host + local Rust backend</li>
+          </ul>
+          <div class="platform-downloads">
+            <a class="btn btn-primary platform-btn" href="https://github.com/CogSFTWR/cognitience-wp/releases/download/v2.1.1/CognitienceWP_v2.1.1_win.zip">
+              <img src="logo-windows.png" alt="" class="platform-logo" />
+              <span>Windows <small>installer</small></span>
+            </a>
+            <a class="btn btn-ghost platform-btn" href="https://github.com/CogSFTWR/cognitience-wp/releases/download/v2.1.1/CognitienceWP_v2.1.1_mac_arm64.zip">
+              <img src="logo-apple.png" alt="" class="platform-logo" />
+              <span>Mac <small>Apple Silicon</small></span>
+            </a>
+            <a class="btn btn-ghost platform-btn" href="https://github.com/CogSFTWR/cognitience-wp/releases/download/v2.1.1/CognitienceWP_v2.1.1_linux_x64.tar.gz">
+              <img src="logo-windows.png" alt="" class="platform-logo" style="filter:grayscale(1);opacity:.85" />
+              <span>Linux <small>x64</small></span>
+            </a>
+          </div>
+        </article>
+
+        <article class="app-card liquid-glass card-ss">
+          <img class="app-icon" src="logo-ss.png" alt="Cognitience SS icon" />
+          <h3>Cognitience SS <span class="version-pill">v2.1.0</span></h3>
+          <p class="app-tagline">A spreadsheet that respects your data — and opens the files you already have.</p>
+          <ul class="app-meta">
+            <li>Opens .xlsx, .csv/.tsv, and .parquet directly</li>
+            <li>Exports to xlsx, csv, tsv, and open JSON</li>
+            <li>Native host + local Rust backend</li>
+          </ul>
+          <div class="platform-downloads">
+            <a class="btn btn-primary platform-btn" href="https://github.com/WlnJBrn09/CognitienceSS/releases/download/v2.1.0/CognitienceSS_v2.1.0.exe">
+              <img src="logo-windows.png" alt="" class="platform-logo" />
+              <span>Windows <small>installer</small></span>
+            </a>
+            <a class="btn btn-ghost platform-btn" href="https://github.com/WlnJBrn09/CognitienceSS/releases/download/v2.1.0/CognitienceSS_v2.1.0_mac_arm64.zip">
+              <img src="logo-apple.png" alt="" class="platform-logo" />
+              <span>Mac <small>Apple Silicon</small></span>
+            </a>
+            <a class="btn btn-ghost platform-btn" href="https://github.com/WlnJBrn09/CognitienceSS/releases/download/v2.1.0/CognitienceSS_v2.1.0_linux_x64.tar.gz">
+              <img src="logo-windows.png" alt="" class="platform-logo" style="filter:grayscale(1);opacity:.85" />
+              <span>Linux <small>x64</small></span>
+            </a>
+          </div>
+        </article>
+
+        <article class="app-card liquid-glass card-pp">
+          <img class="app-icon" src="logo-pp.png" alt="Cognitience PP icon" />
+          <h3>Cognitience PP <span class="version-pill">v1.1.0</span></h3>
+          <p class="app-tagline">Presentations without the cloud chrome. Just you and the canvas.</p>
+          <ul class="app-meta">
+            <li>Opens and displays .pdf, .png, and .pptx</li>
+            <li>Insert images, PDF pages, video, and audio</li>
+            <li>Native host + local Rust backend</li>
+          </ul>
+          <div class="platform-downloads">
+            <a class="btn btn-primary platform-btn" href="https://github.com/WlnJBrn09/CognitiencePP/releases/download/v1.1.0/CognitiencePP_v1.1.0.exe">
+              <img src="logo-windows.png" alt="" class="platform-logo" />
+              <span>Windows <small>installer</small></span>
+            </a>
+            <a class="btn btn-ghost platform-btn" href="https://github.com/WlnJBrn09/CognitiencePP/releases/download/v1.1.0/CognitiencePP_v1.1.0_mac_arm64.zip">
+              <img src="logo-apple.png" alt="" class="platform-logo" />
+              <span>Mac <small>Apple Silicon</small></span>
+            </a>
+            <a class="btn btn-ghost platform-btn" href="https://github.com/WlnJBrn09/CognitiencePP/releases/download/v1.1.0/CognitiencePP_v1.1.0_linux_x64.tar.gz">
+              <img src="logo-windows.png" alt="" class="platform-logo" style="filter:grayscale(1);opacity:.85" />
+              <span>Linux <small>x64</small></span>
+            </a>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <section class="section" id="why">
+      <div class="section-head">
+        <h2>Open by default. Local by design.</h2>
+        <p>The big suites rent you your own documents. Cognitience hands them back.</p>
+      </div>
+      <div class="pillars">
+
+        <article class="pillar liquid-glass glass-light">
+          <div class="pillar-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2 2 7v10l10 5 10-5V7L12 2zm0 2.3L19.6 8 12 11.7 4.4 8 12 4.3zM4 9.7l7 3.5v7.1l-7-3.5V9.7zm9 10.6v-7.1l7-3.5v7.1l-7 3.5z"/></svg>
+          </div>
+          <h3>Open source, MIT licensed</h3>
+          <p>Every line is on GitHub. Audit it, fork it, learn from it, ship it. The license doesn't change when the business model does â€” because there isn't one.</p>
+        </article>
+
+        <article class="pillar liquid-glass glass-light">
+          <div class="pillar-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 1 1 6 0v3H9zm3 5a2 2 0 0 1 1 3.73V19a1 1 0 0 1-2 0v-1.27A2 2 0 0 1 12 14z"/></svg>
+          </div>
+          <h3>Nothing leaves your machine</h3>
+          <p>Each app runs its backend on localhost and saves to your own folders. No upload queues, no sync conflicts, no "recovered versions" on someone else's server. Airplane mode is a feature, not a punishment.</p>
+        </article>
+
+        <article class="pillar liquid-glass glass-light">
+          <div class="pillar-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          </div>
+          <h3>Open formats, no lock-in</h3>
+          <p>Documents are plain JSON you can read with any text editor, and the apps open the world's files too â€” xlsx, csv, parquet, pdf, png, pptx. Leave whenever you want; your work comes with you.</p>
+        </article>
+
+        <article class="pillar liquid-glass glass-light">
+          <div class="pillar-icon">
+            <svg viewBox="0 0 24 24"><path d="M13 2 3 14h7v8l10-12h-7V2z"/></svg>
+          </div>
+          <h3>Fast, because it's yours</h3>
+          <p>A Rust backend and zero round-trips mean saves are instant and the UI never waits on a network. Your computer is fast â€” your software should act like it.</p>
+        </article>
+
+        <article class="pillar liquid-glass glass-light">
+          <div class="pillar-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </div>
+          <h3>No accounts, no telemetry</h3>
+          <p>There is no sign-in screen because there is nothing to sign in to. We can't sell your data; we never see it. Download, run, done.</p>
+        </article>
+
+        <article class="pillar liquid-glass glass-light">
+          <div class="pillar-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm1 15.93V20a1 1 0 0 1-2 0v-1.07A7 7 0 0 1 5.07 13H4a1 1 0 0 1 0-2h1.07A7 7 0 0 1 11 5.07V4a1 1 0 0 1 2 0v1.07A7 7 0 0 1 18.93 11H20a1 1 0 0 1 0 2h-1.07A7 7 0 0 1 13 18.93z"/></svg>
+          </div>
+          <h3>Yours to keep, forever</h3>
+          <p>A portable .exe and files on your disk means Cognitience keeps working even if we disappear. No subscription to lapse, no server to shut down, no rug to pull.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <section class="statement">
+      <blockquote>
+        &ldquo;The best cloud is no cloud. Your words, your numbers, your slides â€” on your disk, under your control, in formats anyone can read.&rdquo;
+      </blockquote>
+      <cite>â€” The Cognitience principle</cite>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="logo.png" alt="" />
+        <span>Cognitience</span>
+      </div>
+      <div class="social-links">
+        <a href="https://x.com/waylon_bro37117" target="_blank" rel="noopener" aria-label="X (Twitter)" title="X">
+          <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href="https://discord.gg/bGSz9bQfY4" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
+          <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+        </a>
+        <a href="https://github.com/WlnJBrn09" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+          <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <p class="footer-note">MIT licensed Â· Local-first Â· Made by <a href="https://github.com/WlnJBrn09" target="_blank" rel="noopener" style="color:inherit">WlnJBrn09</a></p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

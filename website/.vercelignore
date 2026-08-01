@@ -1,0 +1,6 @@
+downloads/
+_mac_artifacts/
+*.exe
+*.zip
+.vercel
+Cog Sftwr.svg.png

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog — Cognitience</title>
+  <meta name="description" content="News and notes from Cognitience — open, local-first office software." />
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    (function () {
+      var stored = null;
+      try { stored = localStorage.getItem('cog-theme'); } catch (e) {}
+      var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <img src="logo.png" alt="Cognitience logo" />
+        <span>Cognitience</span>
+      </a>
+      <nav class="main-nav">
+        <a href="index.html">Downloads</a>
+        <a href="blog.html" class="active">Blog</a>
+      </nav>
+      <div class="header-actions">
+        <div class="social-links social-links-header">
+          <a href="https://x.com/waylon_bro37117" target="_blank" rel="noopener" aria-label="X (Twitter)" title="X">
+            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          <a href="https://discord.gg/bGSz9bQfY4" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
+            <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+          </a>
+          <a href="https://github.com/WlnJBrn09" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+            <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          </a>
+        </div>
+        <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark / light theme" title="Toggle theme">
+          <svg id="theme-icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display:none"><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-14a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm8-8a1 1 0 0 1 1 1 1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1zM5 12a1 1 0 0 1-1 1H3a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1zm13.66-6.66a1 1 0 0 1 1.41 1.41l-.7.71a1 1 0 0 1-1.42-1.42l.71-.7zM6.34 16.24a1 1 0 0 1 1.41 1.41l-.7.71A1 1 0 1 1 5.63 16.95l.71-.71zm12.02 2.12-.71-.7a1 1 0 0 1 1.42-1.42l.7.71a1 1 0 0 1-1.41 1.41zM7.76 6.34l-.71-.7A1 1 0 1 1 8.46 4.22l.71.7A1 1 0 1 1 7.76 6.34z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="section-head">
+        <h2>The Cognitience Blog</h2>
+        <p>Release notes, design notes, and the case for software that stays on your machine.</p>
+      </div>
+
+      <div class="blog-list">
+
+        <article class="post liquid-glass">
+          <p class="post-meta">Essay · July 27, 2026</p>
+          <h2>Why We’re Building the “VS Code” of Office Productivity</h2>
+          <p>
+            When you look at modern software development, VS Code completely changed the game. It wasn't just
+            because it was a great text editor—it was because it got out of the developer's way and offered a
+            world-class plugin ecosystem. If you needed a specific linter, theme, or database explorer, someone
+            had built an extension for it. And when teams wanted to reimagine how AI interacts with code—giving
+            birth to platforms like Cursor—VS Code served as the ultimate starting point to fork and innovate.
+          </p>
+          <p>Why doesn't your daily office suite work like that?</p>
+          <p>
+            At Cognitience, we believe document editors, spreadsheets, and workspace management tools should be
+            just as flexible, modular, and developer-friendly.
+          </p>
+          <h3>The Cognitience Philosophy</h3>
+          <ul>
+            <li>
+              <strong>User Choice Above All:</strong> Nobody works the exact same way. Our plugin ecosystem
+              allows teams to tailor their productivity suite to their exact stack, rather than adapting their
+              habits to fit rigid software.
+            </li>
+            <li>
+              <strong>A Base for the Next Generation:</strong> If you're a developer building a niche vertical
+              tool, an AI workflow engine, or a specialized enterprise app, you shouldn't have to reinvent
+              document rendering or document storage from scratch. Cognitience is designed to be the foundation
+              you fork and build upon.
+            </li>
+            <li>
+              <strong>Open &amp; Adaptable:</strong> Productivity isn't a one-size-fits-all product—it's an
+              ecosystem.
+            </li>
+          </ul>
+          <h3>What’s Next?</h3>
+          <p>
+            We're building the foundation for a more open, extensible productivity landscape. Whether you're an
+            enterprise user looking for a workspace that actually adapts to your needs, or a developer ready to
+            build the next groundbreaking application on top of Cognitience, we're excited to have you along for
+            the journey.
+          </p>
+          <p>
+            Check out <a href="https://cognitiencesoftware.xyz">cognitiencesoftware.xyz</a> to follow our
+            progress and explore developer docs.
+          </p>
+        </article>
+
+        <article class="post liquid-glass">
+          <p class="post-meta">Release · July 27, 2026</p>
+          <h2 class="post-title-icon"><img class="post-icon" src="logo-ss.png" alt="" /> Cognitience SS 2.0 ships today</h2>
+          <p>
+            The spreadsheet joins WP 2.0 with a full refresh: direct opening of <strong>.xlsx</strong>,
+            <strong>.csv/.tsv</strong>, and <strong>.parquet</strong> straight from your Documents folder, a formula
+            bar with <strong>=SUM()</strong>, arithmetic, and cell references, and export to xlsx, csv, tsv, and
+            plain JSON. The grid stays solid for legibility while the chrome gets the full liquid-glass treatment,
+            including a dark mode toggle.
+          </p>
+          <p>
+            Like everything we ship, it's MIT-licensed and local-first — workbooks are JSON files on your disk,
+            and the backend only listens on localhost. Grab it on the
+            <a href="index.html#downloads">downloads page</a>.
+          </p>
+        </article>
+
+        <article class="post liquid-glass">
+          <p class="post-meta">Release · July 24, 2026</p>
+          <h2 class="post-title-icon"><img class="post-icon" src="logo-pp.png" alt="" /> Introducing Cognitience PP — presentations without the cloud</h2>
+          <p>
+            Cognitience PP 1.0 is our presentation app: a clean canvas with no Share button, no upgrade nag, no
+            menu chrome borrowed from a web app. It opens and displays <strong>pdf</strong>, <strong>png</strong>,
+            and <strong>pptx</strong> files, and you can insert images, PDF pages, video, and audio onto slides.
+          </p>
+          <p>
+            Title and subtitle slides, text boxes, full type control — fonts, page color, highlight, underline,
+            strikethrough, super/subscript — all wrapped in monochrome liquid glass with a dark/light theme.
+            It's a portable .exe: download, run, present.
+          </p>
+        </article>
+
+        <article class="post liquid-glass">
+          <p class="post-meta">Essay · July 20, 2026</p>
+          <h2>Why local-first wins</h2>
+          <p>
+            The modern office suite is a rental. Your documents live in someone else's data center, behind a
+            sign-in, under terms that can change. If the network drops, the subscription lapses, or the company
+            pivots, your access goes with it.
+          </p>
+          <p>Local-first flips every one of those defaults:</p>
+          <ul>
+            <li><strong>Ownership</strong> — files on your disk, in formats you can read with any tool. Cognitience stores documents as plain JSON and opens xlsx, csv, parquet, pdf, png, and pptx.</li>
+            <li><strong>Privacy</strong> — there is no telemetry because there is no server to phone home to. Each app's backend listens on localhost only.</li>
+            <li><strong>Speed</strong> — no round-trips. Saves are instant; the UI never waits on a network.</li>
+            <li><strong>Permanence</strong> — a portable .exe keeps working forever. There's no server to shut down and no rug to pull.</li>
+          </ul>
+          <p>
+            Openness makes the promise enforceable: with MIT-licensed source on GitHub, you never have to take
+            our word for any of it.
+          </p>
+        </article>
+
+        <article class="post liquid-glass">
+          <p class="post-meta">Announcement · July 15, 2026</p>
+          <h2>Hello, world — Cognitience is open source</h2>
+          <p>
+            Cognitience started with a simple frustration: every mainstream office app wanted an account, an
+            upload, and a subscription before it would let me type a sentence. So we built the opposite — three
+            small, fast apps (WP, SS, PP) with Rust backends, Apple-inspired liquid-glass interfaces, and one
+            rule: <strong>nothing is uploaded to the cloud</strong>.
+          </p>
+          <p>
+            Everything is MIT-licensed and on <a href="https://github.com/WlnJBrn09" target="_blank" rel="noopener">GitHub</a>.
+            Come say hi on <a href="https://discord.gg/bGSz9bQfY4" target="_blank" rel="noopener">Discord</a> or
+            <a href="https://x.com/waylon_bro37117" target="_blank" rel="noopener">X</a> — feedback, bugs, and
+            pull requests are all welcome.
+          </p>
+        </article>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="logo.png" alt="" />
+        <span>Cognitience</span>
+      </div>
+      <div class="social-links">
+        <a href="https://x.com/waylon_bro37117" target="_blank" rel="noopener" aria-label="X (Twitter)" title="X">
+          <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href="https://discord.gg/bGSz9bQfY4" target="_blank" rel="noopener" aria-label="Discord" title="Discord">
+          <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+        </a>
+        <a href="https://github.com/WlnJBrn09" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+          <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <p class="footer-note">MIT licensed · Local-first · Made by <a href="https://github.com/WlnJBrn09" target="_blank" rel="noopener" style="color:inherit">WlnJBrn09</a></p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

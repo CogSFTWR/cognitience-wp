@@ -1,0 +1,5 @@
+﻿.vercel
+downloads/
+_mac_artifacts/
+*.exe
+*.zip
