@@ -15,6 +15,8 @@ python -m http.server 8080
 
 ```
 index.html     Downloads (main page) — hero, app cards, openness/localness pillars
+docs.html      Docs tab — renders markdown guides (extensions)
+docs/          Markdown sources (extensions.md)
 blog.html      Blog with release notes and essays
 style.css      Monochrome liquid-glass design system (light + dark)
 script.js      Theme toggle + pointer-driven glass specular
@@ -22,7 +24,6 @@ logo.png       Site/brand logo
 logo-wp.png    Cognitience WP app icon (blue) — used on the WP download card
 logo-ss.png    Cognitience SS app icon (green) — used on the SS download card
 logo-pp.png    Cognitience PP app icon (red) — used on the PP download card
-downloads/     Portable Windows builds (.exe) linked from the download cards
 ```
 
 To publish a new release:

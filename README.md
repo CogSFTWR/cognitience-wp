@@ -41,16 +41,19 @@ Optional environment variables:
 | `PORT` | `8787` | HTTP port (localhost only) |
 | `COGNITION_DATA_DIR` | `./documents` | Where `.json` documents are stored |
 | `COGNITION_STATIC_DIR` | `./static` | Frontend assets |
+| `COGNITION_PLUGINS` | enabled | Set to `0` to disable the plugin system |
 
 ## Features
 
 - **Apple-style Liquid Glass** chrome
 - Local document create / open / auto-save / star
 - Fonts, colors, highlight, bold/italic/underline, lists, links, print
+- **Plugins** — install `.cogwp` packages via **Extensions** (search Documents or install from file). See [docs/PLUGIN_SYSTEM.md](docs/PLUGIN_SYSTEM.md).
 
 ## Tests
 
 ```bash
+cargo test
 npm test
 npm run test:glass
 ```

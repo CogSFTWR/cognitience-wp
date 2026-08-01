@@ -1,7 +1,7 @@
 {
   "name": "cognitience-wp",
-  "version": "2.1.1",
-  "description": "Cognitience WP \u2014 local-first word processor with liquid glass UI and Rust backend",
+  "version": "2.2.0",
+  "description": "Cognitience WP — local-first word processor with liquid glass UI, Rust backend, and .cogwp plugins",
   "author": "Cognitience",
   "license": "MIT",
   "private": true,

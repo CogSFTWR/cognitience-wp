@@ -2166,3 +2166,132 @@ html[data-theme="dark"] #text-loupe::after {
     display: none !important;
   }
 }
+
+/* ── Extensions panel + plugin host chrome ───────────────── */
+.ext-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.ext-section-title {
+  margin: 16px 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.ext-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+  margin-bottom: 8px;
+}
+
+.ext-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+html[data-theme="dark"] .ext-row {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ext-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ext-meta strong {
+  font-size: 0.95rem;
+}
+
+.ext-ver {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  word-break: break-all;
+}
+
+.ext-error {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #c0392b;
+}
+
+.ext-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ext-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
+.plugin-sidebar {
+  position: fixed;
+  right: 16px;
+  top: 120px;
+  width: min(320px, calc(100vw - 32px));
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.plugin-sidebar.hidden {
+  display: none;
+}
+
+.plugin-panel {
+  pointer-events: auto;
+  padding: 12px 14px;
+  border-radius: 16px;
+}
+
+.plugin-panel-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.plugin-panel-body {
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.plugin-panel-body pre {
+  margin: 0;
+  max-height: 280px;
+  overflow: auto;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.plugin-tb {
+  /* inherits .t-icon */
+}
+

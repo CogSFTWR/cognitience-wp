@@ -37,8 +37,9 @@
     </defs>
   </svg>
 
-  <input type="file" id="file-open-input" class="sr-only" accept=".md,.markdown,.txt,.docx,.pdf,.html,.htm,.json,.cog,image/*" multiple/>
+  <input type="file" id="file-open-input" class="sr-only" accept=".md,.markdown,.txt,.docx,.pdf,.html,.htm,.json,.cog,.jsonl,image/*" multiple/>
   <input type="file" id="image-input" class="sr-only" accept="image/*"/>
+  <input type="file" id="plugin-file-input" class="sr-only" accept=".cogwp,application/zip"/>
 
   <div id="app">
     <header id="header" class="liquid-glass liquid-glass--heavy glass glass-heavy">
@@ -61,6 +62,10 @@
           <button type="button" class="glass-btn pressable hidden" id="md-toggle" title="Toggle raw Markdown" aria-pressed="false">
             <span class="material-symbols-outlined" aria-hidden="true">code</span>
             <span id="md-toggle-label">Rendered MD</span>
+          </button>
+          <button type="button" class="glass-btn pressable" id="extensions-btn" title="Extensions" aria-label="Extensions">
+            <span class="material-symbols-outlined" aria-hidden="true">extension</span>
+            Extensions
           </button>
           <button type="button" class="glass-btn pressable" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
             <span class="material-symbols-outlined icon-light" aria-hidden="true">dark_mode</span>
@@ -385,9 +390,40 @@ Grapes, 6</textarea>
     </div>
   </div>
 
+  <!-- Extensions panel -->
+  <div id="extensions-panel" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="extensions-title" aria-hidden="true">
+    <div class="modal-backdrop" data-close="extensions"></div>
+    <div class="modal-card modal-wide liquid-glass liquid-glass--heavy glass glass-heavy">
+      <h2 id="extensions-title" class="modal-title">Extensions</h2>
+      <p class="field-hint">Open packages (<code>.cogwp</code>). No review gates — install what you want. A bad plugin disables itself; your documents stay safe.</p>
+      <div class="ext-toolbar">
+        <button type="button" class="glass-btn pressable" data-act="search">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          Search
+        </button>
+        <button type="button" class="glass-btn pressable" data-act="install-file">
+          <span class="material-symbols-outlined" aria-hidden="true">upload</span>
+          Install from file
+        </button>
+        <a class="glass-btn pressable" href="https://cognitiencesoftware.xyz/docs" target="_blank" rel="noopener">Docs</a>
+      </div>
+      <h3 class="ext-section-title">Installed</h3>
+      <div id="ext-installed" class="ext-list"></div>
+      <h3 class="ext-section-title">Found on disk</h3>
+      <div id="ext-found" class="ext-list"></div>
+      <div class="modal-actions">
+        <button type="button" class="glass-btn pressable" data-close="extensions">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plugin sidebar host (panels plugins add) -->
+  <aside id="plugin-sidebar" class="plugin-sidebar hidden" aria-label="Plugin panels"></aside>
+
   <script src="vendor/pdf.min.js"></script>
   <script src="pdf-helpers.js"></script>
   <script src="liquid-glass.js"></script>
+  <script src="plugins.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+{
+  "id": "example.jsonl",
+  "name": "JSONL Viewer",
+  "version": "1.0.0",
+  "app": "wp",
+  "main": "main.js",
+  "style": "style.css"
+}

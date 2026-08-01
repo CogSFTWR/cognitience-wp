@@ -1,0 +1,7 @@
+{
+  "id": "example.ai-draft",
+  "name": "AI Draft Stub",
+  "version": "1.0.0",
+  "app": "wp",
+  "main": "main.js"
+}

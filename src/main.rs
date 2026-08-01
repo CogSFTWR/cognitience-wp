@@ -4,6 +4,7 @@
 mod documents;
 mod export;
 mod files;
+mod plugins;
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -15,6 +16,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use axum::body::Body;
+use serde::Deserialize;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
@@ -29,6 +31,7 @@ use files::{
 struct AppState {
     store: Arc<DocumentStore>,
     docs_dir: PathBuf,
+    data_dir: PathBuf,
 }
 
 #[tokio::main]
@@ -47,11 +50,19 @@ async fn main() -> anyhow::Result<()> {
     std::fs::create_dir_all(&docs_dir)?;
     tracing::info!(path = %docs_dir.display(), "user Documents folder");
 
-    let store = Arc::new(DocumentStore::open(data_dir)?);
-    let state = AppState { store, docs_dir };
+    let store = Arc::new(DocumentStore::open(data_dir.clone())?);
+    let state = AppState {
+        store,
+        docs_dir,
+        data_dir: data_dir.clone(),
+    };
 
     let static_dir = resolve_static_dir();
     tracing::info!(path = %static_dir.display(), "static assets");
+    tracing::info!(
+        enabled = plugins::plugins_enabled(),
+        "plugin system"
+    );
 
     let index = static_dir.join("index.html");
     let spa = ServeDir::new(&static_dir).not_found_service(ServeFile::new(index));
@@ -68,7 +79,15 @@ async fn main() -> anyhow::Result<()> {
         .route("/files/import", post(import_upload))
         .route("/files/raw", get(serve_raw_file))
         .route("/files/docs-dir", get(docs_dir_info))
-        .route("/export", post(export_document));
+        .route("/export", post(export_document))
+        .route("/plugins", get(list_plugins).post(install_plugin))
+        .route("/plugins/search", post(search_plugins))
+        .route("/plugins/install-path", post(install_plugin_path))
+        .route("/plugins/{id}/enable", post(enable_plugin))
+        .route("/plugins/{id}/disable", post(disable_plugin))
+        .route("/plugins/{id}/uninstall", post(uninstall_plugin))
+        .route("/plugins/{id}/error", post(report_plugin_error))
+        .route("/plugins/{id}/files/{*path}", get(serve_plugin_file));
 
     let app = Router::new()
         .nest("/api", api)
@@ -128,6 +147,8 @@ async fn health(State(state): State<AppState>) -> impl IntoResponse {
         "mode": "local",
         "cloud": false,
         "documents_dir": state.docs_dir.display().to_string(),
+        "plugins": plugins::plugins_enabled(),
+        "plugin_package": plugins::PACKAGE_EXT,
     }))
 }
 
@@ -293,6 +314,110 @@ async fn delete_document(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[derive(Debug, Deserialize)]
+struct InstallPathBody {
+    path: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct PluginErrorBody {
+    error: Option<String>,
+}
+
+async fn list_plugins(State(state): State<AppState>) -> Result<Json<Vec<plugins::InstalledPlugin>>, ApiError> {
+    let list = plugins::list_installed(&state.data_dir).map_err(ApiError::from)?;
+    Ok(Json(list))
+}
+
+async fn search_plugins(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<plugins::FoundPackage>>, ApiError> {
+    let found = plugins::search_packages(&state.docs_dir).map_err(ApiError::from)?;
+    Ok(Json(found))
+}
+
+async fn install_plugin(
+    State(state): State<AppState>,
+    mut multipart: Multipart,
+) -> Result<Json<plugins::InstalledPlugin>, ApiError> {
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| ApiError::bad(e.to_string()))?
+    {
+        let name = field.file_name().unwrap_or("plugin.cogwp").to_string();
+        let data = field
+            .bytes()
+            .await
+            .map_err(|e| ApiError::bad(e.to_string()))?;
+        let installed =
+            plugins::install_from_bytes(&state.data_dir, &name, &data).map_err(ApiError::from)?;
+        return Ok(Json(installed));
+    }
+    Err(ApiError::bad("no file in upload".into()))
+}
+
+async fn install_plugin_path(
+    State(state): State<AppState>,
+    Json(body): Json<InstallPathBody>,
+) -> Result<Json<plugins::InstalledPlugin>, ApiError> {
+    let installed =
+        plugins::install_from_path(&state.data_dir, &state.docs_dir, &body.path).map_err(ApiError::from)?;
+    Ok(Json(installed))
+}
+
+async fn enable_plugin(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<plugins::InstalledPlugin>, ApiError> {
+    let p = plugins::set_enabled(&state.data_dir, &id, true).map_err(ApiError::from)?;
+    Ok(Json(p))
+}
+
+async fn disable_plugin(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<plugins::InstalledPlugin>, ApiError> {
+    let p = plugins::set_enabled(&state.data_dir, &id, false).map_err(ApiError::from)?;
+    Ok(Json(p))
+}
+
+async fn uninstall_plugin(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    plugins::uninstall(&state.data_dir, &id).map_err(ApiError::from)?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn report_plugin_error(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(body): Json<PluginErrorBody>,
+) -> Result<StatusCode, ApiError> {
+    plugins::set_error(&state.data_dir, &id, body.error).map_err(ApiError::from)?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn serve_plugin_file(
+    State(state): State<AppState>,
+    Path((id, path)): Path<(String, String)>,
+) -> Result<Response, ApiError> {
+    let (bytes, mime) =
+        plugins::read_plugin_file(&state.data_dir, &id, &path).map_err(ApiError::from)?;
+    let mut res = Response::new(Body::from(bytes));
+    *res.status_mut() = StatusCode::OK;
+    res.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_str(mime).unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream")),
+    );
+    res.headers_mut().insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("private, no-cache"),
+    );
+    Ok(res)
+}
+
 struct ApiError {
     status: StatusCode,
     message: String,
@@ -365,6 +490,33 @@ impl From<files::FileError> for ApiError {
                 message: e.to_string(),
             },
             files::FileError::Other(s) => Self {
+                status: StatusCode::BAD_REQUEST,
+                message: s,
+            },
+        }
+    }
+}
+
+impl From<plugins::PluginError> for ApiError {
+    fn from(err: plugins::PluginError) -> Self {
+        match err {
+            plugins::PluginError::Disabled => Self {
+                status: StatusCode::SERVICE_UNAVAILABLE,
+                message: "Plugins disabled".into(),
+            },
+            plugins::PluginError::NotFound => Self {
+                status: StatusCode::NOT_FOUND,
+                message: "Plugin not found".into(),
+            },
+            plugins::PluginError::Invalid(s) => Self {
+                status: StatusCode::BAD_REQUEST,
+                message: s,
+            },
+            plugins::PluginError::Io(e) => Self {
+                status: StatusCode::INTERNAL_SERVER_ERROR,
+                message: e.to_string(),
+            },
+            plugins::PluginError::Other(s) => Self {
                 status: StatusCode::BAD_REQUEST,
                 message: s,
             },

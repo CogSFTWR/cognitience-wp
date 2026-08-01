@@ -80,6 +80,75 @@
   const drawSize = document.getElementById('draw-size');
   let pendingChartType = 'pie';
 
+  // Plugin host state (filled by CognitiencePlugins)
+  const pluginCommands = new Map();
+  const pluginOpeners = []; // { pluginId, extensions: string[], open: fn }
+  const docChangeListeners = new Set();
+  const docOpenListeners = new Set();
+  const docSaveListeners = new Set();
+  const pluginToolbar = document.getElementById('toolbar')
+    ? document.getElementById('toolbar').querySelector('.toolbar-scroll')
+    : null;
+  const pluginSidebar = document.getElementById('plugin-sidebar');
+
+  function emitDoc(listeners, payload) {
+    listeners.forEach((fn) => {
+      try {
+        fn(payload);
+      } catch (e) {
+        console.warn('[plugin listener]', e);
+      }
+    });
+  }
+
+  function getSelectionInfo() {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || sel.isCollapsed) {
+      return { text: '', html: '' };
+    }
+    const text = sel.toString();
+    let html = '';
+    try {
+      const range = sel.getRangeAt(0);
+      const div = document.createElement('div');
+      div.appendChild(range.cloneContents());
+      html = div.innerHTML;
+    } catch {
+      html = text;
+    }
+    return { text, html };
+  }
+
+  function insertHtmlAtCaret(html) {
+    editor.focus();
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const tip = document.createElement('div');
+      tip.innerHTML = html;
+      const frag = document.createDocumentFragment();
+      let node;
+      while ((node = tip.firstChild)) frag.appendChild(node);
+      range.insertNode(frag);
+      markDirty();
+      return;
+    }
+    editor.insertAdjacentHTML('beforeend', html);
+    markDirty();
+  }
+
+  function findPluginOpener(fileName) {
+    const ext = (fileName.split('.').pop() || '').toLowerCase();
+    if (!ext) return null;
+    for (let i = pluginOpeners.length - 1; i >= 0; i--) {
+      const spec = pluginOpeners[i];
+      const list = (spec.extensions || []).map((e) => String(e).replace(/^\./, '').toLowerCase());
+      if (list.includes(ext)) return spec;
+    }
+    return null;
+  }
+
   // Google Docs–style palette (from screenshot)
   const TEXT_PALETTE = [
     '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
@@ -205,6 +274,7 @@
     saveTimer = setTimeout(() => {
       saveDocument({ quiet: true });
     }, 1400);
+    emitDoc(docChangeListeners, { title: docTitle.textContent, html: editor.innerHTML });
   }
 
   function setTitle(raw) {
@@ -1194,6 +1264,12 @@
         showPdfView(source);
         setStatus('Opened PDF · ' + (doc.name || doc.ext || 'pdf'));
         refreshFileList();
+        emitDoc(docOpenListeners, {
+          title: doc.title,
+          path: doc.path,
+          html: '',
+          format: 'pdf',
+        });
         return;
       }
       setStatus('Could not open PDF (no streamable source)', 'error');
@@ -1213,6 +1289,12 @@
     applyMargins();
     applyLineSpacing(currentSpacing);
     editor.focus();
+    emitDoc(docOpenListeners, {
+      title: doc.title,
+      path: doc.path,
+      html: editor.innerHTML,
+      format: doc.format,
+    });
   }
 
   async function openLocalPdfFile(file) {
@@ -1255,6 +1337,20 @@
   async function importLocalFiles(fileList) {
     const helpers = window.CognitionPdf;
     for (const file of fileList) {
+      const opener = findPluginOpener(file.name);
+      if (opener && typeof opener.open === 'function') {
+        try {
+          setStatus('Opening ' + file.name + '…', 'saving');
+          await opener.open(file);
+          setStatus('Opened · ' + file.name);
+          continue;
+        } catch (e) {
+          console.warn('[plugin opener]', e);
+          setStatus(e.message || 'Plugin open failed', 'error');
+          continue;
+        }
+      }
+
       const isPdf = helpers
         ? helpers.isPdfFileName(file.name, file.type)
         : /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
@@ -1357,6 +1453,7 @@
       dirty = false;
       setStatus('Saved locally');
       setTitle(doc.title);
+      emitDoc(docSaveListeners, { id: doc.id, title: doc.title, html: editor.innerHTML });
       return doc;
     } catch (e) {
       setStatus('Save failed', 'error');
@@ -2037,6 +2134,122 @@
     } catch (e) {
       setStatus('Offline UI mode', 'error');
       placeCaretAtEnd(editor);
+    }
+
+    // Attach plugins only after core UI is ready — failures never block editing.
+    if (window.CognitiencePlugins && typeof window.CognitiencePlugins.attach === 'function') {
+      try {
+        await window.CognitiencePlugins.attach({
+          getHtml: () => editor.innerHTML,
+          setHtml: (html) => {
+            clearPdfView();
+            editor.innerHTML = html || '';
+            markDirty();
+          },
+          getTitle: () => (docTitle.textContent || '').trim(),
+          setTitle: (t) => {
+            docTitle.textContent = t || 'Untitled document';
+            setTitle(t);
+            markDirty();
+          },
+          getSelection: () => getSelectionInfo(),
+          insertHtml: (html) => insertHtmlAtCaret(html),
+          replaceSelection: (html) => insertHtmlAtCaret(html),
+          onDocChange: (fn) => {
+            docChangeListeners.add(fn);
+            return () => docChangeListeners.delete(fn);
+          },
+          onDocOpen: (fn) => {
+            docOpenListeners.add(fn);
+            return () => docOpenListeners.delete(fn);
+          },
+          onDocSave: (fn) => {
+            docSaveListeners.add(fn);
+            return () => docSaveListeners.delete(fn);
+          },
+          notify: (msg, kind) => setStatus(String(msg), kind === 'error' ? 'error' : ''),
+          setStatus: (msg, kind) => setStatus(String(msg), kind || ''),
+          addToolbarButton: (pluginId, opts) => {
+            if (!pluginToolbar) return null;
+            opts = opts || {};
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 't-icon pressable plugin-tb';
+            btn.title = opts.title || opts.label || pluginId;
+            btn.setAttribute('aria-label', btn.title);
+            btn.dataset.pluginId = pluginId;
+            if (opts.icon) {
+              btn.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">${opts.icon}</span>`;
+            } else {
+              btn.textContent = opts.label || '•';
+            }
+            btn.addEventListener('mousedown', (e) => e.preventDefault());
+            btn.addEventListener('click', () => {
+              try {
+                if (typeof opts.onClick === 'function') opts.onClick();
+                else if (opts.command) {
+                  const h = pluginCommands.get(opts.command);
+                  if (h) h();
+                }
+              } catch (e) {
+                setStatus(String(e.message || e), 'error');
+              }
+            });
+            pluginToolbar.appendChild(btn);
+            return btn;
+          },
+          addSidebarPanel: (pluginId, opts) => {
+            if (!pluginSidebar) return null;
+            opts = opts || {};
+            pluginSidebar.classList.remove('hidden');
+            const panel = document.createElement('div');
+            panel.className = 'plugin-panel liquid-glass liquid-glass--medium';
+            panel.dataset.pluginId = pluginId;
+            const title = document.createElement('div');
+            title.className = 'plugin-panel-title';
+            title.textContent = opts.title || pluginId;
+            const body = document.createElement('div');
+            body.className = 'plugin-panel-body';
+            if (opts.html) body.innerHTML = opts.html;
+            panel.appendChild(title);
+            panel.appendChild(body);
+            pluginSidebar.appendChild(panel);
+            if (typeof opts.mount === 'function') {
+              try {
+                opts.mount(body);
+              } catch (e) {
+                console.warn(e);
+              }
+            }
+            return panel;
+          },
+          addCommand: (pluginId, id, handler) => {
+            pluginCommands.set(id, handler);
+          },
+          removeCommand: (id) => {
+            pluginCommands.delete(id);
+          },
+          runCommand: (id, ...args) => {
+            const h = pluginCommands.get(id);
+            if (!h) throw new Error('Unknown command: ' + id);
+            return h(...args);
+          },
+          registerOpener: (pluginId, spec) => {
+            pluginOpeners.push({
+              pluginId,
+              extensions: spec.extensions || [],
+              open: spec.open,
+              _spec: spec,
+            });
+          },
+          removeOpener: (spec) => {
+            const idx = pluginOpeners.findIndex((o) => o._spec === spec || o.open === (spec && spec.open));
+            if (idx >= 0) pluginOpeners.splice(idx, 1);
+          },
+        });
+      } catch (e) {
+        console.warn('[plugins] attach failed', e);
+      }
     }
   })();
 
