@@ -1659,12 +1659,11 @@
     preRange.setStart(block, 0);
     preRange.setEnd(range.startContainer, range.startOffset);
     const prefix = preRange.toString().replace(/\u200B/g, '');
-    // Only at start of line/block (optional leading whitespace)
-    const trimmed = prefix.replace(/^\s*/, '');
+    // Only at start of line/block: marker must be the sole non-whitespace content before caret
     let listCmd = null;
-    if (trimmed === '-') {
+    if (/^\s*-$/.test(prefix)) {
       listCmd = 'insertUnorderedList';
-    } else if (/^\d+\.$/.test(trimmed)) {
+    } else if (/^\s*\d+\.$/.test(prefix)) {
       listCmd = 'insertOrderedList';
     }
     if (!listCmd) return false;

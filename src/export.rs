@@ -146,7 +146,8 @@ fn parse_html_document(html: &str) -> RichDoc {
                         i += 1;
                     }
                     "li" => {
-                        let (runs, next) = collect_inline_until(&tokens, i + 1, &["li"]);
+                        let (runs, next) =
+                            collect_inline_until(&tokens, i + 1, &["li"], true);
                         if let Some((_, items)) = list_stack.last_mut() {
                             items.push(collapse_runs(runs));
                         } else {
@@ -163,7 +164,7 @@ fn parse_html_document(html: &str) -> RichDoc {
                     "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                         flush_lists(&mut blocks, &mut list_stack);
                         let level = tag.as_bytes()[1] - b'0';
-                        let (runs, next) = collect_inline_until(&tokens, i + 1, &[tag]);
+                        let (runs, next) = collect_inline_until(&tokens, i + 1, &[tag], false);
                         let runs = collapse_runs(runs);
                         if !runs_are_empty(&runs) {
                             blocks.push(Block::Heading { level, runs });
@@ -172,7 +173,7 @@ fn parse_html_document(html: &str) -> RichDoc {
                     }
                     "p" | "div" | "blockquote" => {
                         flush_lists(&mut blocks, &mut list_stack);
-                        let (runs, next) = collect_inline_until(&tokens, i + 1, &[tag]);
+                        let (runs, next) = collect_inline_until(&tokens, i + 1, &[tag], false);
                         let runs = collapse_runs(runs);
                         if !runs_are_empty(&runs) {
                             blocks.push(Block::Paragraph { runs });
@@ -291,6 +292,7 @@ fn collect_inline_until<'a>(
     tokens: &'a [HtmlToken],
     start: usize,
     close_tags: &[&str],
+    absorb_blocks: bool,
 ) -> (Vec<TextRun>, usize) {
     let mut runs = Vec::new();
     let mut i = start;
@@ -306,9 +308,15 @@ fn collect_inline_until<'a>(
                 }
                 i += 1;
             }
-            HtmlToken::Open { name, .. } if is_block_tag(name) => {
-                // Stop before nested block (except handled specially)
+            HtmlToken::Open { name, .. } if is_block_tag(name) && name != "li" => {
                 if depth.is_empty() {
+                    if absorb_blocks && is_absorbable_block(name) {
+                        let (inner, next) =
+                            collect_inline_until(tokens, i + 1, &[name.as_str()], true);
+                        runs.extend(inner);
+                        i = next;
+                        continue;
+                    }
                     return (runs, i);
                 }
                 i += 1;
@@ -349,6 +357,13 @@ fn is_block_tag(name: &str) -> bool {
             | "article"
             | "header"
             | "footer"
+    )
+}
+
+fn is_absorbable_block(name: &str) -> bool {
+    matches!(
+        name,
+        "p" | "div" | "blockquote" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
     )
 }
 
@@ -1347,6 +1362,32 @@ mod tests {
             Block::Paragraph { runs } => {
                 assert!(runs.iter().any(|r| r.bold && r.text.contains("Bold")));
                 assert!(runs.iter().any(|r| r.bold && r.italic));
+            }
+            _ => panic!("expected paragraph"),
+        }
+    }
+
+    #[test]
+    fn parse_li_with_nested_p() {
+        let doc = parse_html_document("<ul><li><p>Item text</p></li></ul>");
+        match &doc.blocks[0] {
+            Block::List { items, .. } => {
+                let plain = runs_to_plain(&items[0]);
+                assert!(
+                    plain.contains("Item text"),
+                    "expected item text, got: {plain}"
+                );
+            }
+            _ => panic!("expected list"),
+        }
+    }
+
+    #[test]
+    fn parse_underline_span() {
+        let doc = parse_html_document("<p><span style=\"text-decoration: underline\">u</span></p>");
+        match &doc.blocks[0] {
+            Block::Paragraph { runs } => {
+                assert!(runs.iter().any(|r| r.underline && r.text.contains("u")));
             }
             _ => panic!("expected paragraph"),
         }
