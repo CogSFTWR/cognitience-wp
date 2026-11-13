@@ -1,32 +1,26 @@
-# Cognitience Website
+# SilicaOS download site
 
-Static site for the Cognitience suite — open-source, local-first office apps
-(WP word processor, SS spreadsheet, PP presentations).
+Public page for the SilicaOS live ISO. Static files, no build.
 
-No build step. Open `index.html` or serve the folder:
+Great Wave palette: white, red sun `#e60012`, black wave.
+
+## Config
+
+The download URL is a single constant in `config.js`:
+
+```js
+const SILICAOS_ISO = {
+  url: "", // public R2 URL for silicaos-iso / silicaos-2026.11.13-x86_64.iso
+  ...
+};
+```
+
+Leave `url` empty until the ISO is public. The page then shows a placeholder instead of a live download.
+
+## Preview
 
 ```bash
-npx serve .
-# or
-python -m http.server 8080
+python3 -m http.server 8080
 ```
 
-## Structure
-
-```
-index.html     Downloads (main page) — hero, app cards, openness/localness pillars
-blog.html      Blog with release notes and essays
-style.css      Monochrome liquid-glass design system (light + dark)
-script.js      Theme toggle + pointer-driven glass specular
-logo.png       Site/brand logo
-logo-wp.png    Cognitience WP app icon (blue) — used on the WP download card
-logo-ss.png    Cognitience SS app icon (green) — used on the SS download card
-logo-pp.png    Cognitience PP app icon (red) — used on the PP download card
-downloads/     Portable Windows builds (.exe) linked from the download cards
-```
-
-To publish a new release:
-1. Build portable natives in each app repo (`npm run dist` on Windows).
-2. Create a GitHub release with the `*_win.zip` (and CI Mac/Linux artifacts).
-3. Update version pills and download `href`s on `index.html`.
-4. Deploy this site (`npx vercel --prod` from this folder).
+Vercel serves this folder (`vercel.json` in this directory). Root directory on the Cognitience team project is `website`.
