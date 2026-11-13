@@ -6,16 +6,13 @@ Great Wave palette: white, red sun `#e60012`, black wave.
 
 ## Config
 
-The download URL is a single constant in `config.js`:
+The download URL is a single constant in `config.js` (`SILICAOS_ISO.url`).
 
-```js
-const SILICAOS_ISO = {
-  url: "", // public R2 URL for silicaos-iso / silicaos-2026.11.13-x86_64.iso
-  ...
-};
-```
+Current object:
 
-Leave `url` empty until the ISO is public. The page then shows a placeholder instead of a live download.
+`https://fzn8orkzkoaggkog.public.blob.vercel-storage.com/silicaos-2026.11.13-x86_64.iso`
+
+SHA-256 `89db1c1709ec3e44f3d8178ce6728db1a55c0af34b31f6cf98f58e59e94d354f`, 2,259,714,048 bytes.
 
 ## Preview
 

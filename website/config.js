@@ -1,14 +1,13 @@
 /**
  * SilicaOS ISO download config.
  *
- * Fill `url` with the public Cloudflare R2 URL for bucket `silicaos-iso`,
- * object `silicaos-2026.11.13-x86_64.iso`. Leave it empty to show the
- * unpublished placeholder on the page.
+ * `url` is the public object for silicaos-2026.11.13-x86_64.iso.
  */
 const SILICAOS_ISO = {
   filename: "silicaos-2026.11.13-x86_64.iso",
-  url: "",
+  url: "https://fzn8orkzkoaggkog.public.blob.vercel-storage.com/silicaos-2026.11.13-x86_64.iso",
   sha256: "89db1c1709ec3e44f3d8178ce6728db1a55c0af34b31f6cf98f58e59e94d354f",
   sizeLabel: "2.10 GiB",
+  sizeBytes: 2259714048,
   label: "SILICAOS_202611",
 };

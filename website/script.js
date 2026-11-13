@@ -11,7 +11,12 @@
   var copy = document.getElementById("copy-sha");
 
   if (filename) filename.textContent = iso.filename;
-  if (size) size.textContent = iso.sizeLabel;
+  if (size) {
+    var bytes = iso.sizeBytes
+      ? " · " + Number(iso.sizeBytes).toLocaleString("en-US") + " bytes"
+      : "";
+    size.textContent = iso.sizeLabel + bytes;
+  }
   if (label) label.textContent = iso.label;
   if (sha) sha.textContent = iso.sha256;
 
@@ -22,13 +27,14 @@
     download.removeAttribute("aria-disabled");
     download.textContent = "Download ISO";
     status.hidden = true;
+    status.textContent = "";
   } else {
     download.href = "#";
     download.setAttribute("aria-disabled", "true");
     download.textContent = "ISO not published yet";
     status.hidden = false;
     status.textContent =
-      "The public download URL is not set yet. The file will be silicaos-2026.11.13-x86_64.iso on Cloudflare R2 bucket silicaos-iso. Set SILICAOS_ISO.url in config.js when that URL is known.";
+      "The public download URL is not set yet. Set SILICAOS_ISO.url in config.js.";
   }
 
   if (copy) {
